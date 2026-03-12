@@ -4,427 +4,450 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rekap Rekening Koran BRI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0f1117;--panel:#1a1d27;--panel2:#212436;--border:#2e3247;
-  --accent:#3b82f6;--accent2:#1d4ed8;--green:#22c55e;--red:#ef4444;
-  --yellow:#f59e0b;--text:#e2e8f0;--muted:#94a3b8;
-  --penj-bg:#0d2318;--penj-fg:#4ade80;
-}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh}
+  :root {
+    --bg:       #F5F7FA;
+    --white:    #FFFFFF;
+    --border:   #E2E8F0;
+    --border2:  #CBD5E1;
+    --accent:   #2563EB;
+    --accent-h: #1D4ED8;
+    --accent-lt:#EFF6FF;
+    --green:    #16A34A;
+    --green-lt: #DCFCE7;
+    --red:      #DC2626;
+    --red-lt:   #FEE2E2;
+    --yellow-lt:#FFFBEB;
+    --text:     #0F172A;
+    --text2:    #475569;
+    --text3:    #94A3B8;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Inter', sans-serif;
+    --radius:   10px;
+    --shadow:   0 1px 3px rgba(0,0,0,.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
 
-header{background:linear-gradient(135deg,#1e3a5f,#1a2744);padding:18px 32px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
-.logo{font-size:26px;font-weight:800;color:#60a5fa;letter-spacing:-1px}
-.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+  .topbar {
+    position: sticky; top: 0; z-index: 200;
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 54px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow);
+  }
+  .topbar-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+  .topbar-title { font-weight: 700; font-size: 15px; }
+  .topbar-sub   { font-size: 12px; color: var(--text3); }
 
-.container{max-width:1280px;margin:0 auto;padding:28px 20px}
+  .page { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; display: flex; flex-direction: column; gap: 16px; }
 
-/* Upload */
-.upload-zone{border:2px dashed var(--border);border-radius:16px;padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--panel);position:relative}
-.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:#1a2133}
-.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.upload-icon{font-size:44px;margin-bottom:10px}
-.upload-zone h2{font-size:17px;margin-bottom:5px}
-.upload-zone p{color:var(--muted);font-size:13px}
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; box-shadow: var(--shadow); }
+  .card-title { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
 
-.file-list{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.chip{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:12px;display:flex;align-items:center;gap:6px}
-.chip .rm{cursor:pointer;color:var(--red);font-weight:bold;line-height:1}
+  #dropzone { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 36px 20px; text-align: center; cursor: pointer; transition: .2s; position: relative; background: var(--bg); }
+  #dropzone:hover, #dropzone.over { border-color: var(--accent); background: var(--accent-lt); }
+  #dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon  { font-size: 30px; margin-bottom: 8px; }
+  .drop-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .drop-sub   { font-size: 12px; color: var(--text3); }
 
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 26px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:var(--accent2)}
-.btn-primary:disabled{background:#334155;color:var(--muted);cursor:not-allowed}
-.btn-green{background:#15803d;color:#fff}
-.btn-green:hover{background:#166534}
-.btn-green:disabled{background:#1f3a2a;color:#4b7a5a;cursor:not-allowed}
-.btn-wrap{text-align:center;margin-top:18px}
+  #file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .file-chip { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+  .file-chip .fc-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip .fc-size { color: var(--text3); font-family: var(--mono); font-size: 11px; flex-shrink: 0; }
+  .file-chip .fc-rm   { background: none; border: none; color: var(--text3); cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+  .file-chip .fc-rm:hover { color: var(--red); background: var(--red-lt); }
 
-/* Progress */
-.progress-wrap{display:none;margin-top:18px}
-.progress-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:3px}
-.progress-msg{text-align:center;color:var(--muted);font-size:12px;margin-top:7px}
+  .btn-primary { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: var(--radius); color: #fff; font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: .15s; box-shadow: 0 2px 8px rgba(37,99,235,.25); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-h); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Alert */
-.alert{padding:13px 17px;border-radius:10px;font-size:13px;margin-top:14px}
-.alert-error{background:#3b1515;border:1px solid #7f1d1d;color:#fca5a5}
-.alert-success{background:#14291a;border:1px solid #166534;color:#86efac}
+  #progress-section { display: none; }
+  .prog-wrap { height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; margin: 12px 0 8px; }
+  .prog-fill  { height: 100%; background: var(--accent); border-radius: 99px; width: 5%; transition: width .4s; }
+  .prog-label { font-size: 13px; color: var(--text2); }
 
-/* Stats */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:24px}
-.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
-.stat-card .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.stat-card .val{font-size:18px;font-weight:700}
-.c-blue{color:#60a5fa}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-yellow{color:var(--yellow)}
+  #result-section { display: none; }
+  .res-hdr { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .res-company { font-size: 17px; font-weight: 700; }
+  .res-meta    { font-size: 12px; color: var(--text3); margin-top: 3px; }
+  .badge-ok    { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; background: var(--green-lt); color: var(--green); flex-shrink: 0; }
 
-/* Download bar */
-.dl-bar{background:var(--panel);border:1px solid #166534;border-radius:12px;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:10px}
-.dl-bar .info{font-size:13px}.dl-bar .info b{color:var(--green)}
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-lbl { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+  .stat-val { font-size: 19px; font-weight: 700; font-family: var(--mono); line-height: 1.1; }
+  .stat-val.green { color: var(--green); } .stat-val.blue { color: var(--accent); } .stat-val.red { color: var(--red); }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
 
-/* Table */
-.tbl-wrap{margin-top:22px;background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.tbl-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
-.tbl-head h3{font-size:14px;font-weight:600}
-.filters{display:flex;gap:8px;flex-wrap:wrap}
-.filters input,.filters select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 11px;font-size:12px;outline:none}
-.filters input:focus,.filters select:focus{border-color:var(--accent)}
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; }
+  .filters .f-label { font-size: 12px; font-weight: 600; color: var(--text3); flex-shrink: 0; }
+  .month-btns { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .month-btn { padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; transition: .15s; }
+  .month-btn.active { border-color: var(--accent); background: var(--accent-lt); color: var(--accent); }
+  .filter-sel { background: var(--white); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
+  .search-input { background: var(--white); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: var(--sans); width: 220px; outline: none; transition: border-color .15s; }
+  .search-input:focus { border-color: var(--accent); }
 
-.scroll{overflow-x:auto;max-height:540px;overflow-y:auto}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-thead th{background:#1c2133;padding:9px 11px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
-tbody tr:hover{background:var(--panel2)}
-tbody tr.penj{background:var(--penj-bg)}
-tbody tr.penj:hover{background:#112a1c}
-tbody td{padding:8px 11px;vertical-align:top}
-td.num{text-align:right;font-family:'Courier New',monospace}
-td.ctr{text-align:center}
-.debet{color:#f87171}.kredit{color:#4ade80}
+  .tbl-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: #F1F5F9; padding: 10px 12px; font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  thead th.r { text-align: right; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tbody td.r { text-align: right; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #F8FAFC; }
+  tbody tr.penj-row { background: #F0FDF4; }
+  tbody tr.penj-row:hover { background: #DCFCE7; }
 
-.kat-sel{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;outline:none;width:100%}
-.kat-sel.penj{border-color:#166534;color:var(--penj-fg);background:var(--penj-bg)}
+  .num { font-family: var(--mono); font-size: 11px; }
+  .num.red   { color: var(--red); font-weight: 600; }
+  .num.green { color: var(--green); font-weight: 600; }
+  .num.dim   { color: var(--text3); }
+  .desc-cell { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.desc-cell{max-width:300px;word-break:break-word;line-height:1.4}
+  .kat-sel { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid; cursor: pointer; font-family: var(--sans); background: transparent; transition: .15s; }
+  .kat-sel.penj { color: var(--green); border-color: #BBF7D0; background: var(--green-lt); }
+  .kat-sel.nonp { color: var(--text3); border-color: var(--border2); background: var(--bg); }
 
-.pagination{display:flex;justify-content:center;align-items:center;gap:6px;padding:14px}
-.pbn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;transition:all .15s}
-.pbn:hover{border-color:var(--accent)}.pbn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.pbn:disabled{opacity:.35;cursor:not-allowed}
-.pinfo{color:var(--muted);font-size:12px}
+  .pager { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 11px; border-top: 1px solid var(--border); }
+  .pager-btn { background: transparent; border: 1px solid var(--border2); color: var(--text2); padding: 5px 13px; border-radius: 7px; font-size: 12px; cursor: pointer; transition: .15s; }
+  .pager-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .pager-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pager-info { font-size: 12px; color: var(--text3); }
 
-.sec-title{font-size:15px;font-weight:700;margin:24px 0 10px}
-.hidden{display:none!important}
-.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+  .tbl-total td { background: #F1F5F9 !important; font-weight: 700; border-top: 2px solid var(--border2) !important; }
+
+  .btn-download { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: var(--green); border: none; border-radius: var(--radius); color: #fff; font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: .15s; box-shadow: 0 2px 8px rgba(22,163,74,.25); }
+  .btn-download:hover { background: #15803D; transform: translateY(-1px); }
+  .btn-reset { width: 100%; padding: 9px; margin-top: 8px; background: none; border: 1px solid var(--border2); border-radius: 8px; color: var(--text2); font-family: var(--sans); font-size: 13px; cursor: pointer; transition: .15s; }
+  .btn-reset:hover { border-color: var(--text2); }
+
+  .error-box { background: var(--red-lt); border: 1px solid #FECACA; border-radius: var(--radius); padding: 14px 16px; font-size: 13px; color: var(--red); display: flex; gap: 8px; }
+  .edit-hint { font-size: 12px; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .edit-hint span { background: var(--yellow-lt); border: 1px solid #FDE68A; border-radius: 5px; padding: 2px 8px; color: #92400E; font-weight: 600; font-size: 11px; }
+  footer { text-align: center; padding: 0 0 32px; font-size: 12px; color: var(--text3); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation: fadeUp .3s ease both; }
 </style>
 </head>
 <body>
 
-<header>
-  <div>
-    <div class="logo">📊 Rekap Rekening BRI</div>
-    <div class="subtitle">Upload PDF Rekening Koran → Preview → Edit Kategori → Download Excel</div>
-  </div>
-</header>
-
-<div class="container">
-
-  <!-- Upload -->
-  <div class="upload-zone" id="dropzone">
-    <input type="file" id="fileInput" accept=".pdf" multiple>
-    <div class="upload-icon">📄</div>
-    <h2>Upload PDF Rekening Koran BRI</h2>
-    <p>Klik atau drag &amp; drop — bisa beberapa file sekaligus</p>
-  </div>
-  <div class="file-list" id="fileList"></div>
-
-  <div class="btn-wrap">
-    <button class="btn btn-primary" id="prosesBtn" disabled onclick="prosesFile()">
-      <span id="btnTxt">⚡ Proses PDF</span>
-    </button>
-  </div>
-
-  <div class="progress-wrap" id="progressWrap">
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="progress-msg" id="progressMsg">Memproses PDF...</div>
-  </div>
-
-  <div id="alertBox"></div>
-
-  <!-- Result -->
-  <div id="resultSection" class="hidden">
-
-    <!-- Download bar -->
-    <div class="dl-bar">
-      <div class="info">
-        ✅ File siap — <b id="dlPenjCount">0</b> penjualan dari <b id="dlTxCount">0</b> transaksi
-        &nbsp;·&nbsp; Edit kolom Kategori di tabel lalu klik Download
-      </div>
-      <button class="btn btn-green" id="dlBtn" onclick="downloadExcel()">
-        ⬇ Download Excel
-      </button>
-    </div>
-
-    <!-- KPI -->
-    <div class="stats" id="statsCards"></div>
-
-    <!-- Table -->
-    <div class="sec-title">
-      Detail Transaksi
-      <span id="tblInfo" style="color:var(--muted);font-size:12px;font-weight:400"></span>
-    </div>
-
-    <div class="tbl-wrap">
-      <div class="tbl-head">
-        <h3>Semua Transaksi — ubah kolom <span style="color:var(--yellow)">Kategori</span> untuk edit manual</h3>
-        <div class="filters">
-          <input type="text" id="searchInp" placeholder="🔍 Cari deskripsi..." oninput="filterTable()" style="width:190px">
-          <select id="monthFil" onchange="filterTable()"><option value="">Semua Bulan</option></select>
-          <select id="katFil" onchange="filterTable()">
-            <option value="">Semua Kategori</option>
-            <option value="Penjualan">Penjualan</option>
-            <option value="Non penjualan">Non penjualan</option>
-          </select>
-        </div>
-      </div>
-      <div class="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:38px">No</th>
-              <th style="width:58px">Bulan</th>
-              <th style="width:88px">Tanggal</th>
-              <th>Deskripsi</th>
-              <th style="width:125px">Debet (Rp)</th>
-              <th style="width:125px">Kredit (Rp)</th>
-              <th style="width:125px">Saldo (Rp)</th>
-              <th style="width:140px">Kategori ✏️</th>
-            </tr>
-          </thead>
-          <tbody id="txBody"></tbody>
-        </table>
-      </div>
-      <div class="pagination" id="pagination"></div>
-    </div>
-
-  </div>
+<div class="topbar">
+  <div class="topbar-icon">📊</div>
+  <span class="topbar-title">Rekap Rekening BRI</span>
+  <span class="topbar-sub">Upload PDF Rekening Koran → Preview → Edit Kategori → Download Excel</span>
 </div>
 
-<script>
-let selectedFiles = [];
-let allTx = [];
-let filteredTx = [];
-let currentPage = 1;
-const PAGE = 100;
+<div class="page">
 
-// ─── Upload ────────────────────────────────────────────────────────────────
-const dz = document.getElementById('dropzone');
-const fi = document.getElementById('fileInput');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); addFiles([...e.dataTransfer.files]); });
-fi.addEventListener('change', () => { addFiles([...fi.files]); fi.value = ''; });
+  <!-- Upload -->
+  <div class="card" id="upload-card">
+    <div class="card-title">Upload PDF Rekening Koran BRI</div>
+    <div id="dropzone">
+      <input type="file" id="file-input" accept=".pdf" multiple>
+      <div class="drop-icon">📄</div>
+      <div class="drop-title">Upload PDF Rekening Koran BRI</div>
+      <div class="drop-sub">Klik atau drag &amp; drop — bisa beberapa file sekaligus</div>
+    </div>
+    <div id="file-list"></div>
+    <div style="margin-top:14px">
+      <button class="btn-primary" id="btn-process" disabled onclick="startProcess()">⚡ Proses PDF</button>
+    </div>
+  </div>
 
-function addFiles(files) {
-  files.filter(f => f.name.toLowerCase().endsWith('.pdf')).forEach(f => {
-    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size))
-      selectedFiles.push(f);
-  });
-  renderChips();
-}
-function removeFile(i) { selectedFiles.splice(i, 1); renderChips(); }
-function renderChips() {
-  document.getElementById('fileList').innerHTML = selectedFiles.map((f, i) =>
-    `<div class="chip">📄 ${f.name} <span class="rm" onclick="removeFile(${i})">✕</span></div>`
-  ).join('');
-  document.getElementById('prosesBtn').disabled = !selectedFiles.length;
-}
+  <!-- Progress -->
+  <div class="card" id="progress-section">
+    <div class="card-title">Memproses PDF...</div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-label" id="prog-label">Membaca file PDF...</div>
+  </div>
 
-// ─── Proses ────────────────────────────────────────────────────────────────
-async function prosesFile() {
-  if (!selectedFiles.length) return;
-  const btn = document.getElementById('prosesBtn');
-  const txt = document.getElementById('btnTxt');
-  btn.disabled = true;
-  txt.innerHTML = '<span class="spinner"></span> Memproses...';
-  document.getElementById('progressWrap').style.display = 'block';
-  document.getElementById('resultSection').classList.add('hidden');
-  document.getElementById('alertBox').innerHTML = '';
+  <!-- Result -->
+  <div id="result-section">
+    <div class="card fade-up">
+      <div class="res-hdr">
+        <div>
+          <div class="res-company" id="res-company">—</div>
+          <div class="res-meta" id="res-meta">—</div>
+        </div>
+        <span class="badge-ok">✅ File siap — <b id="res-penj-count">0</b> penjualan dari <b id="res-tx-count">0</b> transaksi &nbsp;·&nbsp; Edit kolom Kategori di tabel lalu klik Download</span>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <button class="btn-download" id="btn-download" onclick="doDownload()">⬇ Download Excel</button>
+      <button class="btn-reset" onclick="resetApp()">↩ Upload PDF lain</button>
+    </div>
 
-  animProgress(['Membaca PDF...','Parsing transaksi...','Menganalisa kategori...','Menyiapkan data...']);
-
-  const fd = new FormData();
-  selectedFiles.forEach(f => fd.append('pdfs', f));
-
-  try {
-    const res  = await fetch('/proses', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      showAlert(data.error || 'Terjadi kesalahan', 'error');
-    } else {
-      allTx = data.transactions;
-      renderResult(data);
-    }
-  } catch(e) {
-    showAlert('Gagal terhubung ke server: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    txt.innerHTML = '⚡ Proses PDF';
-    document.getElementById('progressWrap').style.display = 'none';
-  }
-}
-
-function animProgress(msgs) {
-  let pct = 0, mi = 0;
-  const fill = document.getElementById('progressFill');
-  const msg  = document.getElementById('progressMsg');
-  msg.textContent = msgs[0];
-  const iv = setInterval(() => {
-    pct = Math.min(pct + Math.random() * 9, 88);
-    fill.style.width = pct + '%';
-    const ni = Math.min(Math.floor(pct / 25), msgs.length - 1);
-    if (ni > mi) { mi = ni; msg.textContent = msgs[mi]; }
-    if (pct >= 88) clearInterval(iv);
-  }, 220);
-}
-
-// ─── Render result ─────────────────────────────────────────────────────────
-function renderResult(data) {
-  const fmt = n => n ? n.toLocaleString('id-ID', {minimumFractionDigits:0}) : '-';
-  const m = data.meta;
-  const totalK = allTx.reduce((s,t) => s+t.kredit, 0);
-  const totalD = allTx.reduce((s,t) => s+t.debet, 0);
-
-  document.getElementById('statsCards').innerHTML = `
-    <div class="stat-card"><div class="lbl">Rekening</div><div class="val c-blue" style="font-size:13px">${m.accountNo}</div></div>
-    <div class="stat-card"><div class="lbl">Nama</div><div class="val c-blue" style="font-size:12px">${m.companyName}</div></div>
-    <div class="stat-card"><div class="lbl">Total Transaksi</div><div class="val c-blue">${data.total_tx}</div></div>
-    <div class="stat-card"><div class="lbl">Total Kredit</div><div class="val c-green" style="font-size:14px">Rp ${fmt(totalK)}</div></div>
-    <div class="stat-card"><div class="lbl">Total Debet</div><div class="val c-red" style="font-size:14px">Rp ${fmt(totalD)}</div></div>
-    <div class="stat-card" id="penjCard"><div class="lbl">Total Penjualan</div><div class="val c-yellow" style="font-size:14px" id="penjVal">Rp ${fmt(allTx.filter(t=>t.kategori==='Penjualan').reduce((s,t)=>s+t.kredit,0))}</div></div>
-    <div class="stat-card"><div class="lbl">Saldo Akhir</div><div class="val c-blue" style="font-size:14px">Rp ${fmt(m.closing)}</div></div>
-  `;
-
-  // Month filter
-  const months = [...new Set(allTx.map(t => t.month))];
-  document.getElementById('monthFil').innerHTML = '<option value="">Semua Bulan</option>' +
-    months.map(m => `<option value="${m}">${m}</option>`).join('');
-
-  updateDLBar();
-  filteredTx = [...allTx];
-  currentPage = 1;
-  renderTable();
-  document.getElementById('resultSection').classList.remove('hidden');
-  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
-}
-
-function updateDLBar() {
-  const penj = allTx.filter(t => t.kategori === 'Penjualan');
-  document.getElementById('dlTxCount').textContent  = allTx.length;
-  document.getElementById('dlPenjCount').textContent = penj.length;
-  const fmt = n => n.toLocaleString('id-ID', {minimumFractionDigits:0});
-  const penjVal = document.getElementById('penjVal');
-  if (penjVal) penjVal.textContent = 'Rp ' + fmt(penj.reduce((s,t) => s+t.kredit, 0));
-}
-
-// ─── Table ─────────────────────────────────────────────────────────────────
-function filterTable() {
-  const q  = document.getElementById('searchInp').value.toLowerCase();
-  const mo = document.getElementById('monthFil').value;
-  const ka = document.getElementById('katFil').value;
-  filteredTx = allTx.filter(t =>
-    (!q  || t.desc.toLowerCase().includes(q)) &&
-    (!mo || t.month === mo) &&
-    (!ka || t.kategori === ka)
-  );
-  currentPage = 1;
-  renderTable();
-}
-
-function renderTable() {
-  const pages = Math.max(1, Math.ceil(filteredTx.length / PAGE));
-  const slice = filteredTx.slice((currentPage-1)*PAGE, currentPage*PAGE);
-  const fmt   = n => n ? n.toLocaleString('id-ID', {minimumFractionDigits:2,maximumFractionDigits:2}) : '';
-
-  document.getElementById('tblInfo').textContent = `(${filteredTx.length} transaksi)`;
-
-  document.getElementById('txBody').innerHTML = slice.map(t => {
-    const p = t.kategori === 'Penjualan';
-    const gi = allTx.indexOf(t);
-    return `<tr class="${p?'penj':''}" id="tr-${gi}">
-      <td class="ctr">${t.no}</td>
-      <td class="ctr" style="font-size:11px">${t.month}</td>
-      <td class="ctr" style="font-size:11px;white-space:nowrap">${t.date}</td>
-      <td class="desc-cell">${esc(t.desc)}</td>
-      <td class="num debet">${t.debet ? fmt(t.debet) : ''}</td>
-      <td class="num kredit">${t.kredit ? fmt(t.kredit) : ''}</td>
-      <td class="num">${fmt(t.balance)}</td>
-      <td>
-        <select class="kat-sel ${p?'penj':''}" onchange="changeKat(${gi},this)">
-          <option ${p?'selected':''}>Penjualan</option>
-          <option ${!p?'selected':''}>Non penjualan</option>
+    <div class="card fade-up">
+      <div class="card-title">Detail Transaksi</div>
+      <div id="edit-hint" class="edit-hint" style="display:none">
+        <span>✏️ Edit Kategori</span> Klik dropdown di kolom Kategori untuk mengubah Penjualan / Non penjualan — perubahan langsung tercermin saat Download
+      </div>
+      <div class="filters" id="filters-row">
+        <span class="f-label">Bulan:</span>
+        <div class="month-btns" id="month-btns"></div>
+        <select class="filter-sel" id="kat-filter" onchange="applyFilter()">
+          <option value="ALL">Semua Kategori</option>
+          <option value="Penjualan">Penjualan</option>
+          <option value="Non penjualan">Non penjualan</option>
         </select>
-      </td>
-    </tr>`;
-  }).join('');
+        <input class="search-input" id="search-input" placeholder="🔍 Cari deskripsi..." oninput="applyFilter()">
+      </div>
+      <div class="tbl-card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="r" style="width:42px">No</th>
+                <th style="width:70px">Bulan</th>
+                <th style="width:130px">Tanggal</th>
+                <th>Deskripsi</th>
+                <th class="r" style="width:140px">Debet (Rp)</th>
+                <th class="r" style="width:140px">Kredit (Rp)</th>
+                <th class="r" style="width:150px">Saldo (Rp)</th>
+                <th style="width:130px">Kategori ✏️</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-body"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="pager" style="display:none">
+          <button class="pager-btn" id="btn-prev" onclick="changePage(-1)">← Prev</button>
+          <span class="pager-info" id="pager-info"></span>
+          <button class="pager-btn" id="btn-next" onclick="changePage(1)">Next →</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;text-align:center;font-size:11px;color:var(--text3)" id="tbl-note"></div>
+    </div>
+  </div>
 
-  renderPagination(pages);
+</div>
+
+<footer>Rekap Rekening Koran BRI &nbsp;·&nbsp; <span style="color:var(--accent);font-weight:600">by rezapelvian v1.0</span></footer>
+
+<script>
+let selectedFiles = [], jobId = null, pollTimer = null;
+let allTx = [], filteredTx = [];
+let pg = 1, mFilter = 'ALL', kFilter = 'ALL', qFilter = '';
+const PS = 200;
+
+// ── File input ──────────────────────────────────────────────
+const fileInput = document.getElementById('file-input');
+const dropzone  = document.getElementById('dropzone');
+fileInput.addEventListener('change', e => addFiles([...e.target.files]));
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('over');
+  addFiles([...e.dataTransfer.files].filter(f => f.name.toLowerCase().endsWith('.pdf')));
+});
+function addFiles(files) {
+  files.forEach(f => { if (!selectedFiles.find(x => x.name===f.name&&x.size===f.size)) selectedFiles.push(f); });
+  renderFileList();
+}
+function removeFile(i) { selectedFiles.splice(i,1); renderFileList(); }
+function renderFileList() {
+  document.getElementById('file-list').innerHTML = selectedFiles.map((f,i) => `
+    <div class="file-chip">
+      <span>📋</span>
+      <span class="fc-name">${f.name}</span>
+      <span class="fc-size">${(f.size/1024).toFixed(0)} KB</span>
+      <button class="fc-rm" onclick="removeFile(${i})">✕</button>
+    </div>`).join('');
+  document.getElementById('btn-process').disabled = selectedFiles.length === 0;
+  fileInput.value = '';
 }
 
-function changeKat(gi, sel) {
-  allTx[gi].kategori = sel.value;
-  const p = sel.value === 'Penjualan';
-  sel.className = 'kat-sel' + (p ? ' penj' : '');
-  const tr = document.getElementById(`tr-${gi}`);
-  if (tr) tr.className = p ? 'penj' : '';
-  updateDLBar();
-}
-
-function renderPagination(pages) {
-  if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
-  let h = `<button class="pbn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
-  for (let p=1; p<=pages; p++) {
-    if (pages>8 && p>2 && p<pages-1 && Math.abs(p-currentPage)>2) {
-      if (p===3||p===pages-2) h+='<span style="color:var(--muted);padding:0 3px">…</span>';
-      continue;
-    }
-    h += `<button class="pbn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
-  }
-  h += `<button class="pbn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>›</button>`;
-  h += `<span class="pinfo">&nbsp;${(currentPage-1)*PAGE+1}–${Math.min(currentPage*PAGE,filteredTx.length)} dari ${filteredTx.length}</span>`;
-  document.getElementById('pagination').innerHTML = h;
-}
-
-function goPage(p) {
-  currentPage = p;
-  renderTable();
-  document.querySelector('.scroll').scrollTop = 0;
-}
-
-// ─── Download ──────────────────────────────────────────────────────────────
-async function downloadExcel() {
-  const btn = document.getElementById('dlBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Menyiapkan Excel...';
-
-  // Kirim ulang PDF + override kategori → server generate Excel baru
+// ── Process ─────────────────────────────────────────────────
+async function startProcess() {
+  if (!selectedFiles.length) return;
+  const uc = document.getElementById('upload-card');
+  uc.style.opacity = '.5'; uc.style.pointerEvents = 'none';
+  document.getElementById('btn-process').disabled = true;
+  document.getElementById('progress-section').style.display = 'block';
+  document.getElementById('result-section').style.display   = 'none';
   const fd = new FormData();
   selectedFiles.forEach(f => fd.append('pdfs', f));
-  fd.append('overrides', JSON.stringify(allTx.map(t => ({ no: t.no, kategori: t.kategori }))));
-
   try {
-    const res = await fetch('/download', { method: 'POST', body: fd });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      showAlert(err.error || 'Gagal generate Excel', 'error');
-      return;
-    }
+    const res  = await fetch('/upload', { method:'POST', body:fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    jobId = data.job_id;
+    pollStatus();
+  } catch(e) { showError(e.message); }
+}
+
+function pollStatus() {
+  const steps = ['Membaca halaman PDF...','Mendeteksi kolom transaksi...','Menganalisis kategori penjualan...','Membangun data...','Hampir selesai...'];
+  let step = 0;
+  const fill = document.getElementById('prog-fill');
+  const lbl  = document.getElementById('prog-label');
+  fill.style.width = '10%';
+  pollTimer = setInterval(async () => {
+    try {
+      const data = await (await fetch(`/status/${jobId}`)).json();
+      lbl.textContent  = steps[Math.min(++step, steps.length-1)];
+      fill.style.width = `${15 + step*17}%`;
+      if (data.status === 'done') { clearInterval(pollTimer); fill.style.width='100%'; setTimeout(()=>showResult(data), 400); }
+      else if (data.status === 'error') { clearInterval(pollTimer); showError(data.message||'Error saat memproses'); }
+    } catch(e) { clearInterval(pollTimer); showError('Koneksi terputus.'); }
+  }, 1200);
+}
+
+// ── Format ──────────────────────────────────────────────────
+const fmtN  = n => new Intl.NumberFormat('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+const fmtRp = n => {
+  if (!n) return '0';
+  if (n>=1e12) return (n/1e12).toFixed(2)+'T';
+  if (n>=1e9)  return (n/1e9).toFixed(2)+'M';
+  if (n>=1e6)  return (n/1e6).toFixed(1)+'jt';
+  return new Intl.NumberFormat('id-ID').format(Math.round(n));
+};
+
+// ── Show result ─────────────────────────────────────────────
+function showResult(data) {
+  document.getElementById('progress-section').style.display = 'none';
+  const s = data.stats;
+  allTx = data.transactions || [];
+  document.getElementById('res-company').textContent    = s.company || '—';
+  document.getElementById('res-meta').textContent       = `${s.account}  ·  ${s.period}`;
+  document.getElementById('res-penj-count').textContent = s.total_penj;
+  document.getElementById('res-tx-count').textContent   = s.total_tx;
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-box"><div class="stat-lbl">Total Transaksi</div><div class="stat-val blue">${s.total_tx.toLocaleString('id-ID')}</div></div>
+    <div class="stat-box"><div class="stat-lbl">Total Kredit</div><div class="stat-val">${fmtRp(s.total_kredit)}</div><div class="stat-sub">${fmtN(s.total_kredit)}</div></div>
+    <div class="stat-box"><div class="stat-lbl">Total Debet</div><div class="stat-val red">${fmtRp(s.total_debet)}</div><div class="stat-sub">${fmtN(s.total_debet)}</div></div>
+    <div class="stat-box"><div class="stat-lbl">Penjualan</div><div class="stat-val green" id="sv-rp">${fmtRp(s.total_penj_rp)}</div><div class="stat-sub" id="sv-n">${s.total_penj} transaksi</div></div>`;
+  const months = [...new Set(allTx.map(t=>t.month))];
+  document.getElementById('month-btns').innerHTML =
+    ['ALL',...months].map(m=>`<button class="month-btn ${m==='ALL'?'active':''}" onclick="setMonth('${m}')">${m==='ALL'?'Semua Bulan':m}</button>`).join('');
+  document.getElementById('edit-hint').style.display = 'flex';
+  document.getElementById('result-section').style.display = 'block';
+  mFilter='ALL'; kFilter='ALL'; qFilter=''; pg=1;
+  applyFilter();
+}
+
+// ── Filter ──────────────────────────────────────────────────
+function setMonth(m) {
+  mFilter = m;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.toggle('active', b.textContent===(m==='ALL'?'Semua Bulan':m)));
+  pg=1; applyFilter();
+}
+function applyFilter() {
+  kFilter = document.getElementById('kat-filter').value;
+  qFilter = document.getElementById('search-input').value.toLowerCase();
+  filteredTx = allTx.filter(t => {
+    if (mFilter!=='ALL' && t.month!==mFilter) return false;
+    if (kFilter!=='ALL' && t.kategori!==kFilter) return false;
+    if (qFilter && !t.desc.toLowerCase().includes(qFilter) && !(t.date||'').includes(qFilter)) return false;
+    return true;
+  });
+  pg=1; renderTable();
+}
+function changePage(d) { pg=Math.max(1,Math.min(Math.ceil(filteredTx.length/PS),pg+d)); renderTable(); }
+
+// ── Table ───────────────────────────────────────────────────
+function renderTable() {
+  const total = filteredTx.length;
+  const tPg   = Math.ceil(total/PS)||1;
+  const vis   = filteredTx.slice((pg-1)*PS, pg*PS);
+  const sumD  = filteredTx.reduce((s,t)=>s+t.debet,0);
+  const sumK  = filteredTx.reduce((s,t)=>s+t.kredit,0);
+
+  document.getElementById('tbl-body').innerHTML = [
+    ...vis.map((tx,i) => {
+      const penj = tx.kategori==='Penjualan';
+      const idx  = allTx.indexOf(tx);
+      return `<tr class="${penj?'penj-row':''}">
+        <td class="r num dim">${(pg-1)*PS+i+1}</td>
+        <td>${tx.month||''}</td>
+        <td class="num dim" style="white-space:nowrap">${tx.date||''}</td>
+        <td><div class="desc-cell" title="${(tx.desc||'').replace(/"/g,'&quot;')}">${tx.desc||''}</div></td>
+        <td class="r"><span class="num ${tx.debet?'red':'dim'}">${tx.debet?fmtN(tx.debet):'–'}</span></td>
+        <td class="r"><span class="num ${tx.kredit?'green':'dim'}">${tx.kredit?fmtN(tx.kredit):'–'}</span></td>
+        <td class="r"><span class="num dim">${fmtN(tx.balance)}</span></td>
+        <td><select class="kat-sel ${penj?'penj':'nonp'}" onchange="editKat(${idx},this)">
+          <option value="Penjualan" ${penj?'selected':''}>Penjualan</option>
+          <option value="Non penjualan" ${!penj?'selected':''}>Non penjualan</option>
+        </select></td>
+      </tr>`;
+    }),
+    `<tr class="tbl-total">
+      <td colspan="4" style="padding:10px 12px;font-size:12px">TOTAL — ${total.toLocaleString('id-ID')} transaksi</td>
+      <td class="r"><span class="num red">${fmtN(sumD)}</span></td>
+      <td class="r"><span class="num green">${fmtN(sumK)}</span></td>
+      <td colspan="2"></td>
+    </tr>`
+  ].join('');
+
+  const pager = document.getElementById('pager');
+  if (tPg>1) {
+    pager.style.display='flex';
+    document.getElementById('pager-info').textContent=`Hal ${pg}/${tPg} · ${total} transaksi`;
+    document.getElementById('btn-prev').disabled = pg===1;
+    document.getElementById('btn-next').disabled = pg===tPg;
+  } else { pager.style.display='none'; }
+
+  document.getElementById('res-penj-count').textContent = allTx.filter(t=>t.kategori==='Penjualan').length;
+  document.getElementById('tbl-note').textContent = `${total.toLocaleString('id-ID')} transaksi · Ubah Kategori di tabel, lalu klik Download Excel`;
+}
+
+// ── Edit kategori ────────────────────────────────────────────
+function editKat(idx, sel) {
+  allTx[idx].kategori = sel.value;
+  const penj = sel.value==='Penjualan';
+  sel.className = `kat-sel ${penj?'penj':'nonp'}`;
+  const row = sel.closest('tr');
+  if (penj) row.classList.add('penj-row'); else row.classList.remove('penj-row');
+  const pCount = allTx.filter(t=>t.kategori==='Penjualan').length;
+  const pRp    = allTx.filter(t=>t.kategori==='Penjualan').reduce((s,t)=>s+t.kredit,0);
+  document.getElementById('res-penj-count').textContent = pCount;
+  const sv = document.getElementById('sv-rp'); if(sv) sv.textContent = fmtRp(pRp);
+  const sn = document.getElementById('sv-n');  if(sn) sn.textContent = `${pCount} transaksi`;
+}
+
+// ── Download ────────────────────────────────────────────────
+async function doDownload() {
+  const btn = document.getElementById('btn-download');
+  btn.textContent='⏳ Membuat Excel...'; btn.style.opacity='.7';
+  try {
+    const res = await fetch(`/download/${jobId}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ transactions: allTx }),
+    });
+    if (!res.ok) throw new Error('Download gagal');
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    const acc  = allTx[0] ? `rekap_${allTx[0].month.replace(' ','_')}` : 'rekap';
-    a.href = url;
-    a.download = `${acc}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href=url; a.download='rekap_bri.xlsx'; a.click();
     URL.revokeObjectURL(url);
-  } catch(e) {
-    showAlert('Error: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '⬇ Download Excel';
-  }
+  } catch(e) { alert('Download gagal: '+e.message); }
+  btn.textContent='⬇ Download Excel'; btn.style.opacity='1';
 }
 
-function showAlert(msg, type) {
-  document.getElementById('alertBox').innerHTML =
-    `<div class="alert alert-${type}">${msg}</div>`;
+// ── Error / Reset ────────────────────────────────────────────
+function showError(msg) {
+  document.getElementById('progress-section').innerHTML=`
+    <div class="error-box">⚠ <span>${msg}</span></div>
+    <button class="btn-reset" onclick="resetApp()" style="margin-top:12px">↩ Coba lagi</button>`;
 }
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function resetApp() {
+  clearInterval(pollTimer);
+  jobId=null; selectedFiles=[]; allTx=[];
+  renderFileList();
+  const uc=document.getElementById('upload-card');
+  uc.style.opacity='1'; uc.style.pointerEvents='auto';
+  document.getElementById('progress-section').style.display='none';
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('progress-section').innerHTML=`
+    <div class="card-title">Memproses PDF...</div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-label" id="prog-label">Membaca file PDF...</div>`;
 }
 </script>
 </body>
