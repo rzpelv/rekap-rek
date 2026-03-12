@@ -40,12 +40,22 @@ def _process_job(job_id, pdf_paths, meta_override):
         if meta_override.get("companyName"): mc["companyName"] = meta_override["companyName"]
         if meta_override.get("accountNo"):   mc["accountNo"]   = meta_override["accountNo"]
 
+        out_path = OUTPUT_DIR / f"rekap_{job_id}.xlsx"
+        rk.build_excel(all_txs, mc, str(out_path))
+
         penj = [t for t in all_txs if t["kategori"] == "Penjualan"]
+        by_month = {}
+        for t in all_txs:
+            by_month.setdefault(t["month"], {"debet":0,"kredit":0,"penjualan":0,"count":0})
+            by_month[t["month"]]["debet"]    += t["debet"]
+            by_month[t["month"]]["kredit"]   += t["kredit"]
+            by_month[t["month"]]["count"]    += 1
+            if t["kategori"] == "Penjualan":
+                by_month[t["month"]]["penjualan"] += t["kredit"]
 
         jobs[job_id].update({
             "status": "done",
-            "meta": mc,
-            "transactions": all_txs,
+            "filename": out_path.name,
             "stats": {
                 "company":       mc.get("companyName",""),
                 "account":       mc.get("accountNo",""),
@@ -55,6 +65,7 @@ def _process_job(job_id, pdf_paths, meta_override):
                 "total_penj_rp": sum(t["kredit"] for t in penj),
                 "total_debet":   sum(t["debet"]  for t in all_txs),
                 "total_kredit":  sum(t["kredit"] for t in all_txs),
+                "by_month":      by_month,
             }
         })
     except Exception as e:
@@ -94,35 +105,18 @@ def upload():
 def status(job_id):
     job = jobs.get(job_id)
     if not job: return jsonify({"error": "Job tidak ditemukan"}), 404
-    if job.get("status") == "done":
-        return jsonify({
-            "status": "done",
-            "stats": job["stats"],
-            "transactions": job["transactions"],
-            "meta": job["meta"],
-        })
-    return jsonify({"status": job["status"], "message": job.get("message","")})
+    return jsonify(job)
 
-@app.route("/download/<job_id>", methods=["POST"])
+@app.route("/download/<job_id>")
 def download(job_id):
     job = jobs.get(job_id)
     if not job or job.get("status") != "done":
-        return jsonify({"error": "Job tidak ditemukan"}), 404
-
-    import rekap_rek as rk
-    # Ambil transaksi dengan kategori yang sudah diedit dari frontend
-    data = request.get_json(silent=True) or {}
-    edited = data.get("transactions")  # list [{date,desc,debet,kredit,balance,month,kategori}, ...]
-
-    txs  = edited if edited else job["transactions"]
-    meta = job["meta"]
-
-    out_path = OUTPUT_DIR / f"rekap_{job_id}.xlsx"
-    rk.build_excel(txs, meta, str(out_path))
-
-    company = meta.get("company", meta.get("companyName","rekap")).replace(" ","_")[:20]
-    return send_file(out_path, as_attachment=True,
-        download_name=f"rekap_{company}.xlsx",
+        return jsonify({"error": "File belum siap"}), 404
+    path = OUTPUT_DIR / job["filename"]
+    if not path.exists(): return jsonify({"error": "File tidak ditemukan"}), 404
+    company = job["stats"].get("company","rekap").replace(" ","_")[:20]
+    return send_file(path, as_attachment=True,
+        download_name=f"rekap_bri_{company}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
