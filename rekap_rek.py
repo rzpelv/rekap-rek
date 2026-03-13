@@ -172,11 +172,13 @@ def detect_columns(rows):
             if 'debet' in col_map:
                 # Teller biasanya ~30px sebelum Debet
                 teller_x = col_map.get('teller', col_map['debet'] - 30)
+                # Gunakan offset -15 agar angka yang sedikit lebih kiri tetap masuk kolom yang benar
+                # (PDF kadang render angka besar sedikit ke kiri karena lebih banyak digit)
                 return {
                     'teller': teller_x - 5,
-                    'debet' : col_map['debet']  - 5,
-                    'kredit': col_map['kredit'] - 5,
-                    'saldo' : col_map['saldo']  - 5,
+                    'debet' : col_map['debet']  - 15,
+                    'kredit': col_map['kredit'] - 15,
+                    'saldo' : col_map['saldo']  - 15,
                 }
     # Default (format lama)
     return {'teller': 295, 'debet': 360, 'kredit': 465, 'saldo': 560}
