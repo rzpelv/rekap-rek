@@ -25,50 +25,68 @@ except ImportError:
 
 MONTHS_ID = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
 
-# Keyword yang PASTI bukan penjualan meski kredit
+# ── Keyword yang PASTI bukan penjualan ────────────────────────────────────────
+# Prinsip: HANYA yang benar-benar bukan penerimaan dari customer/pihak luar.
+# Semua kredit dari pihak luar (RTGS, transfer, dsb.) = Penjualan by default.
+
 NON_PENJ_KW = [
-    "NAS",           # transfer NAS dan apapun mengandung NAS
-    "INTEREST ON",   # bunga bank
-    " TAX",          # pajak bank
-    "DARI 0",        # transfer antar rekening sendiri (format: DARI 068401...)
-    "BRIVA",         # virtual account
-    "OVERBOOKING",   # pemindahbukuan internal
-    "BY SURAT REF",  # koreksi bank
-    "IFT_TO",        # internal fund transfer
+    # Bunga & biaya bank
+    "INTEREST ON",
+    "BUNGA TABUNGAN",
+    "BUNGA DEPOSITO",
+    " TAX",
+    "BIAYA ADM",
+    "BIAYA PROVISI",
+    "ADMINISTRASI",
+    # Transfer antar rekening sendiri / internal
+    "OVERBOOKING",
+    "BY SURAT REF",
+    "IFT_TO",
     "IFT TO",
-    # Pencairan pinjaman / pemindahbukuan internal bank
-    "PMDH BUKUAN",   # pemindahbukuan
-    "PMBY PINJ",     # pembayaran pinjaman
-    "OB ESCROW",     # overbooking escrow
-    "ESCROW",        # escrow
-    "DROP OCBC",     # drop/reversal OCBC
-    "BFST",          # bifast (transfer cepat antar bank, sering internal)
-    # Pencairan kredit / pinjaman
-    "PENCAIRAN",     # pencairan kredit/pinjaman
-    "CAIRKAN",
-    "REALISASI",     # realisasi kredit
-    "DROPING",       # droping kredit
-    "DROPPING",
-    "PLAFON",        # plafon kredit
-    "FASILITAS KRD", # fasilitas kredit
-    "PINJAMAN",      # pinjaman
-    "KMK",           # kredit modal kerja
-    "KPR",           # kredit pemilikan rumah
+    "FROM:0",            # transfer dari nomor rekening sendiri
+    "TO:0",
+    "PMDH BUKUAN",
+    "OB ESCROW",
+    "ESCROW",
+    "ESB:RTGS:",         # RTGS keluar (outgoing), bukan penerimaan
+    # Pencairan kredit / pinjaman dari bank (bukan dari customer)
     "PENCAIRAN KRD",
     "CAIR KRD",
-    # RTGS keluar (ESB:RTGS: = outgoing RTGS, bukan penerimaan)
-    "ESB:RTGS:",
-    # Transfer antar rekening sendiri
-    "FROM:0096",     # transfer antar rekening internal
-    "TO:0096",
+    "PMBY PINJ",
+    "PLAFON",
+    "FASILITAS KRD",
+    "KMK",
+    "KPR",
+    "DROPING",
+    "DROPPING",
+    "REALISASI KRD",
 ]
 
-# Keyword yang MENGARAH ke penjualan (uang masuk dari pihak luar)
+# Whole-word keywords (regex \b...\b) — lebih hati-hati agar tidak false positive
+NON_PENJ_WHOLE = [
+    r'\bNAS\b',          # kode NAS (bukan NASIONAL, ANAS, dll)
+    r'\bBRIVA\b',
+]
+
+# Keyword yang diprioritaskan sebagai Penjualan (override default)
 PENJ_KW = [
-    "INKA MULTI","KALTIM NUSA","PUPUK KALTIM","PAYMENT PT",
-    "PMDH BUKUAN","ESB:INDS:0002B","BANK MANDIRI-PEMBAYARA",
-    "BANK BNI-PEMB","S2P","PLN MCTN","PEMBAYARAN PT",
-    "SP2D","SPAN","KASDA",
+    # Instansi pemerintah / APBD / APBN
+    "SP2D", "SPAN", "KASDA", "APBD", "APBN",
+    "PEMKOT", "PEMKAB", "PEMPROV", "PEMERINTAH",
+    # Fasilitas kesehatan
+    "RSUD", "RSIA", "RSUP", "RSU ", "RS ",
+    "RUMAH SAKIT", "PUSKESMAS", "KLINIK", "LABORATORIUM",
+    # Pendidikan
+    "SEKOLAH", "UNIVERSITAS", "UNIV ", "AKADEMI", "MADRASAH",
+    "PESANTREN", "SDN ", "SMPN ", "SMAN ",
+    # BUMN / perusahaan besar
+    "PLN ", "PDAM", "PERTAMINA", "TELKOM",
+    "PUPUK KALTIM", "PUPUK INDONESIA", "INKA MULTI",
+    # Pola pembayaran
+    "PAYMENT PT", "PEMBAYARAN PT", "BANK MANDIRI-PEMBAYARA",
+    "BANK BNI-PEMB", "S2P",
+    # Kode internal yang diketahui = penjualan
+    "ESB:INDS:",
 ]
 
 # Kata yang menandai akhir blok transaksi (baris summary / footer)
@@ -459,69 +477,58 @@ def _rtgs_is_own_or_generic(desc, company_name):
 
 def _categorize(desc, company_name='', debet=0, kredit=0):
     """
-    Kategorisasi transaksi:
-    - Hanya kredit yang bisa jadi Penjualan
-    - Transaksi yang mengandung nama sendiri → Non penjualan
-    - Transaksi yang mengandung keyword NAS atau NON_PENJ_KW → Non penjualan
-    - SP2D/SPAN atau nama pengirim seperti badan usaha → Penjualan
-    - Keyword PENJ_KW → Penjualan
-    - Sisanya → Non penjualan
+    Kategorisasi transaksi — filosofi AGRESIF (lebih banyak Penjualan, koreksi manual):
+
+    URUTAN PRIORITAS:
+      1. Debet → Non penjualan
+      2. Kredit = 0 → Non penjualan
+      3. Nama rekening sendiri → Non penjualan
+      4. NON_PENJ_WHOLE (regex whole-word) → Non penjualan
+      5. NON_PENJ_KW (substring) → Non penjualan
+      6. RTGS# kredit → Penjualan kecuali sender = nama sendiri/generik
+      7. PENJ_KW → Penjualan (konfirmasi eksplisit)
+      8. DEFAULT kredit → Penjualan  ← kunci: semua kredit dari luar = penjualan
+         (user bisa koreksi manual via dropdown)
     """
+    import re as _re
     up = (desc or '').upper()
 
-    # Rule 1: Debet TIDAK PERNAH jadi Penjualan
+    # Rule 1: Debet tidak pernah Penjualan
     if debet > 0 and kredit == 0:
         return 'Non penjualan'
 
-    # Rule 2: Mengandung nama rekening sendiri → Non penjualan
+    # Rule 2: Tidak ada kredit masuk
+    if kredit == 0:
+        return 'Non penjualan'
+
+    # Rule 3: Mengandung nama rekening sendiri → Non penjualan
     if _contains_own_name(desc, company_name):
         return 'Non penjualan'
 
-    # Rule 3: Keyword non-penjualan → Non penjualan
-    # NAS dicek sebagai kata utuh (bukan bagian dari kata lain seperti "PENDIDIKAN")
-    import re as _re
-    if _re.search(r'\bNAS\b', up):
-        return 'Non penjualan'
+    # Rule 4: Whole-word keywords non-penjualan
+    for pattern in NON_PENJ_WHOLE:
+        if _re.search(pattern, up):
+            return 'Non penjualan'
+
+    # Rule 5: Substring keywords non-penjualan
     for kw in NON_PENJ_KW:
-        if kw.upper() == 'NAS':
-            continue  # sudah dicek di atas
         if kw.upper() in up:
             return 'Non penjualan'
 
-    # Rule 3b: RTGS kredit — Penjualan kecuali nama pengirim adalah nama sendiri
-    if kredit > 0 and up.startswith('RTGS#'):
+    # Rule 6: RTGS# kredit — cek apakah sender nama sendiri atau nama generik
+    if up.startswith('RTGS#'):
         if _rtgs_is_own_or_generic(desc, company_name):
             return 'Non penjualan'
-        return 'Penjualan'
+        return 'Penjualan'   # RTGS dari pihak luar = Penjualan
 
-    # Rule 4: SP2D atau SPAN → Penjualan (pembayaran dari pemerintah)
-    if 'SP2D' in up or 'SPAN' in up:
-        return 'Penjualan'
-
-    # Rule 5: RTGS masuk (format RTGS#[NAMA] ... BRIRSS)
-    # Hanya penjualan jika nama pengirim BUKAN nama sendiri dan BUKAN kata umum/kota
-    import re as _re2
-    rtgs_match = _re2.match(r'RTGS#(.+?)(?:\s+(?:PT\s+)?RTGS\s+STP|\s+#|\s+ESB:)', up)
-    if rtgs_match and 'BRIRSS' in up:
-        sender = rtgs_match.group(1).strip()
-        # Jika sudah lolos rule 2 (bukan nama sendiri), cek apakah sender cukup spesifik
-        # Kata-kata umum/kota/tidak informatif → Non penjualan
-        VAGUE = {'SURABAYA','JAKARTA','BANDUNG','SEMARANG','MEDAN','MAKASSAR',
-                 'BALI','YOGYAKARTA','SOLO','MALANG','UNKNOWN','STP','RTGS'}
-        sender_words = set(sender.split())
-        if sender_words.issubset(VAGUE):
-            return 'Non penjualan'
-
-    # Rule 5: Keyword penjualan eksplisit
+    # Rule 7: Keyword Penjualan eksplisit (konfirmasi tambahan, sebenarnya sudah default)
     for kw in PENJ_KW:
         if kw.upper() in up:
             return 'Penjualan'
 
-    # Rule 6: Deskripsi terlihat seperti nama badan usaha/instansi → Penjualan
-    if kredit > 0 and _is_company_like(desc):
-        return 'Penjualan'
-
-    return 'Non penjualan'
+    # Rule 8: DEFAULT — semua kredit dari pihak luar = Penjualan
+    # User bisa koreksi via dropdown jika salah
+    return 'Penjualan'
 
 
 # ── Buat Excel ─────────────────────────────────────────────────────────────────

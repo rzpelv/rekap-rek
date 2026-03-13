@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rekap Rekening Koran BRI</title>
+<title>Rekap Rekening Koran</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -104,8 +104,8 @@ td.ctr{text-align:center}
 
 <header>
   <div>
-    <div class="logo">📊 Rekap Rekening BRI</div>
-    <div class="subtitle">Upload PDF Rekening Koran → Preview → Edit Kategori → Download Excel</div>
+    <div class="logo">📊 Rekap Rekening</div>
+    <div class="subtitle">Upload PDF Rekening Koran semua Bank → Preview → Edit Kategori → Download Excel</div>
   </div>
 </header>
 
@@ -115,8 +115,8 @@ td.ctr{text-align:center}
   <div class="upload-zone" id="dropzone">
     <input type="file" id="fileInput" accept=".pdf" multiple>
     <div class="upload-icon">📄</div>
-    <h2>Upload PDF Rekening Koran BRI</h2>
-    <p>Klik atau drag &amp; drop — bisa beberapa file sekaligus</p>
+    <h2>Upload PDF Rekening Koran</h2>
+    <p>Klik atau drag &amp; drop — bisa beberapa file — semua Bank didukung</p>
   </div>
   <div class="file-list" id="fileList"></div>
 
@@ -283,7 +283,7 @@ function renderResult(data) {
     <div class="stat-card"><div class="lbl">Total Transaksi</div><div class="val c-blue">${data.total_tx}</div></div>
     <div class="stat-card"><div class="lbl">Total Kredit</div><div class="val c-green" style="font-size:14px">Rp ${fmt(totalK)}</div></div>
     <div class="stat-card"><div class="lbl">Total Debet</div><div class="val c-red" style="font-size:14px">Rp ${fmt(totalD)}</div></div>
-    <div class="stat-card" id="penjCard"><div class="lbl">Total Penjualan</div><div class="val c-yellow" style="font-size:14px" id="penjVal">Rp ${fmt(allTx.filter(t=>t.kategori==='Penjualan').reduce((s,t)=>s+t.kredit,0))}</div></div>
+    <div class="stat-card" id="penjCard"><div class="lbl">Total Penjualan</div><div class="val c-yellow" style="font-size:14px" id="penjVal">Rp ${fmt(allTx.filter(t=>t.kategori==='Penjualan').reduce((s,t)=>s+t.kredit,0))}</div><div style="font-size:11px;color:var(--muted);margin-top:3px" id="penjCount">${allTx.filter(t=>t.kategori==='Penjualan').length} transaksi</div></div>
     <div class="stat-card"><div class="lbl">Saldo Akhir</div><div class="val c-blue" style="font-size:14px">Rp ${fmt(m.closing)}</div></div>
   `;
 
@@ -360,6 +360,18 @@ function changeKat(gi, sel) {
   const tr = document.getElementById(`tr-${gi}`);
   if (tr) tr.className = p ? 'penj' : '';
   updateDLBar();
+  updateStats();
+}
+
+function updateStats() {
+  const penj   = allTx.filter(t => t.kategori === 'Penjualan');
+  const penjRp = penj.reduce((s, t) => s + t.kredit, 0);
+  const fmt    = n => n ? n.toLocaleString('id-ID', {minimumFractionDigits:0}) : '-';
+  // Update penjualan card value
+  const penjVal = document.getElementById('penjVal');
+  if (penjVal) penjVal.textContent = 'Rp ' + fmt(penjRp);
+  const penjCount = document.getElementById('penjCount');
+  if (penjCount) penjCount.textContent = penj.length + ' transaksi';
 }
 
 function renderPagination(pages) {
@@ -427,5 +439,9 @@ function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
+<div style="text-align:center;padding:22px 0 30px;color:#475569;font-size:12px">
+  by <span style="color:#60a5fa;font-weight:600">rezapelvian</span> v1.0
+</div>
+
 </body>
 </html>
