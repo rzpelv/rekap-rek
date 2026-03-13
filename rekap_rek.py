@@ -51,6 +51,8 @@ NON_PENJ_KW = [
     "ESB:RTGS:",         # RTGS keluar (outgoing), bukan penerimaan
     # Pencairan kredit / pinjaman dari bank (bukan dari customer)
     "PENCAIRAN KRD",
+    "PENCAIRAN",         # semua jenis pencairan (kredit, deposito, dll) = Non penjualan
+    "CAIRKAN",
     "CAIR KRD",
     "PMBY PINJ",
     "PLAFON",
@@ -414,13 +416,7 @@ def _is_company_like(name_part):
     return False
 
 # Nama kota / entitas generik yang muncul setelah RTGS# → bukan customer nyata
-RTGS_NON_PENJ_NAMES = {
-    'SURABAYA','JAKARTA','BANDUNG','SEMARANG','MEDAN','MAKASSAR','DENPASAR',
-    'YOGYAKARTA','PALEMBANG','BALIKPAPAN','SAMARINDA','MALANG','SOLO',
-    'PONTIANAK','PEKANBARU','BATAM','PADANG','MANADO','AMBON','KUPANG',
-    'BRI','BNI','BCA','BTN','BSI','MANDIRI','CIMB','OCBC','DANAMON',
-    'BANK INDONESIA','RTGS STP',
-}
+RTGS_NON_PENJ_NAMES = set()  # tidak dipakai — RTGS dari manapun = Penjualan kecuali nama sendiri
 
 def _make_abbreviations(company_name):
     """
@@ -446,34 +442,19 @@ def _make_abbreviations(company_name):
 
 def _rtgs_is_own_or_generic(desc, company_name):
     """
-    Untuk transaksi kredit RTGS, cek apakah nama pengirim setelah RTGS#
-    adalah nama sendiri, singkatan nama sendiri, atau nama kota/bank generik.
-    Format BRI: RTGS#NAMA_PENGIRIM #KODE atau RTGS#NAMA PT RTGS STP ESB:T:...
+    RTGS# → Non penjualan HANYA jika nama pengirim mengandung nama rekening sendiri.
+    Semua RTGS dari pihak lain = Penjualan.
+    Format: RTGS#NAMA_PENGIRIM RTGS STP ESB:... atau RTGS#NAMA #KODE
     """
     import re as _re
     up = desc.upper()
-    # Ekstrak nama pengirim — potong di suffix sistem
     m = _re.match(r'RTGS#(.+?)(?:\s+(?:PT\s+)?RTGS\s+STP|\s*#|\s+ESB:|\s+\d{10,}|$)', up)
     if not m:
         return False
     sender = m.group(1).strip()
+    # Non penjualan hanya jika sender = nama rekening sendiri
+    return _contains_own_name(sender, company_name)
 
-    # Cek nama sendiri (lengkap / terpotong / 2 kata)
-    if _contains_own_name(sender, company_name):
-        return True
-
-    # Cek singkatan nama sendiri sebagai kata utuh (misal KPA, NSP)
-    abbrevs = _make_abbreviations(company_name)
-    for abbr in abbrevs:
-        if _re.search(r'\b' + abbr + r'\b', sender):
-            return True
-
-    # Cek nama kota / bank generik
-    for name in RTGS_NON_PENJ_NAMES:
-        if name in sender:
-            return True
-
-    return False
 
 def _categorize(desc, company_name='', debet=0, kredit=0):
     """
