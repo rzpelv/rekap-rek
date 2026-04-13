@@ -158,7 +158,7 @@ td.ctr{text-align:center}
 
     <div class="tbl-wrap">
       <div class="tbl-head">
-        <h3>Semua Transaksi — ubah kolom <span style="color:var(--yellow)">Kategori</span> untuk edit manual</h3>
+        <h3>Semua Transaksi — ubah <span style="color:var(--yellow)">Kategori</span> &amp; <span style="color:#60a5fa">Customer</span> untuk edit manual</h3>
         <div class="filters">
           <input type="text" id="searchInp" placeholder="🔍 Cari deskripsi..." oninput="filterTable()" style="width:190px">
           <select id="monthFil" onchange="filterTable()"><option value="">Semua Bulan</option></select>
@@ -181,6 +181,7 @@ td.ctr{text-align:center}
               <th style="width:125px">Kredit (Rp)</th>
               <th style="width:125px">Saldo (Rp)</th>
               <th style="width:140px">Kategori ✏️</th>
+              <th style="width:160px">Customer ✏️</th>
             </tr>
           </thead>
           <tbody id="txBody"></tbody>
@@ -195,6 +196,7 @@ td.ctr{text-align:center}
 <script>
 let selectedFiles = [];
 let allTx = [];
+let sessionId = '';
 let filteredTx = [];
 let currentPage = 1;
 const PAGE = 100;
@@ -245,6 +247,7 @@ async function prosesFile() {
       showAlert(data.error || 'Terjadi kesalahan', 'error');
     } else {
       allTx = data.transactions;
+      sessionId = data.session_id || '';
       renderResult(data);
     }
   } catch(e) {
@@ -331,8 +334,9 @@ function renderTable() {
   document.getElementById('tblInfo').textContent = `(${filteredTx.length} transaksi)`;
 
   document.getElementById('txBody').innerHTML = slice.map(t => {
-    const p = t.kategori === 'Penjualan';
+    const p  = t.kategori === 'Penjualan';
     const gi = allTx.indexOf(t);
+    const custVal = esc(t.customer || '');
     return `<tr class="${p?'penj':''}" id="tr-${gi}">
       <td class="ctr">${t.no}</td>
       <td class="ctr" style="font-size:11px">${t.month}</td>
@@ -347,6 +351,12 @@ function renderTable() {
           <option ${!p?'selected':''}>Non penjualan</option>
         </select>
       </td>
+      <td>
+        <input type="text" class="cust-inp" value="${custVal}"
+          onchange="changeCust(${gi},this)"
+          placeholder="${p ? 'Nama customer...' : ''}"
+          style="width:100%;background:transparent;border:none;border-bottom:1px solid ${p?'#3b82f6':'#2e3247'};color:var(--text);font-size:12px;padding:2px 4px;outline:none;${p?'':'opacity:.4'}">
+      </td>
     </tr>`;
   }).join('');
 
@@ -359,8 +369,18 @@ function changeKat(gi, sel) {
   sel.className = 'kat-sel' + (p ? ' penj' : '');
   const tr = document.getElementById(`tr-${gi}`);
   if (tr) tr.className = p ? 'penj' : '';
+  // Auto-isi customer jika baru dipindah ke Penjualan dan customer masih kosong
+  if (p && !allTx[gi].customer) {
+    allTx[gi].customer = allTx[gi].customerAuto || '';
+    const inp = tr ? tr.querySelector('.cust-inp') : null;
+    if (inp) inp.value = allTx[gi].customer;
+  }
   updateDLBar();
   updateStats();
+}
+
+function changeCust(gi, inp) {
+  allTx[gi].customer = inp.value.trim();
 }
 
 function updateStats() {
@@ -401,13 +421,18 @@ async function downloadExcel() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Menyiapkan Excel...';
 
-  // Kirim ulang PDF + override kategori → server generate Excel baru
-  const fd = new FormData();
-  selectedFiles.forEach(f => fd.append('pdfs', f));
-  fd.append('overrides', JSON.stringify(allTx.map(t => ({ no: t.no, kategori: t.kategori }))));
+  // Kirim JSON {session_id + overrides} — TIDAK perlu kirim ulang PDF
+  const payload = {
+    session_id: sessionId,
+    overrides: allTx.map(t => ({ no: t.no, kategori: t.kategori, customer: t.customer || '' }))
+  };
 
   try {
-    const res = await fetch('/download', { method: 'POST', body: fd });
+    const res = await fetch('/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       showAlert(err.error || 'Gagal generate Excel', 'error');
