@@ -1581,53 +1581,22 @@ def _extract_customer_name(desc):
         if name and len(name) >= 2:
             return name.title()
         return None
-    # ── FORMAT MANDIRI khusus: nama setelah "DARI" dengan UPPERCASE handling ───────────
+    # ── FORMAT MANDIRI khusus: nama setelah "DARI" tanpa separator ───────────
     # "MCM InhouseTrf DARI NURUL KURNIAWATI bayar tepung Nurul99101"
-    # "RTGS DARI HARDHANI JUNIARTI 9910X"
-    # Ambil NAMA BESAR (UPPERCASE) setelah DARI, stop di: kata keterangan, kode 9910x, Transfer Fee, angka
+    # Ambil nama setelah DARI, stop di: kata keterangan, kode 9910x, Transfer Fee, angka
+    # Format: "... MCM InhouseTrf DARI NAMA [detik] keterangan..."
+    # Tangkap nama: stop di kata keterangan, angka panjang, atau kode
     if 'DARI' in up and ' | ' not in desc:
-        m = re.search(r'\bDARI\s+(.+?)(?:\s+(?:Transfer|Fee|Pelunasan|bayar|Byr|nota|kerupuk|marinasi|warkop|finna|ffc|bwi|toko|belanja|pembayaran|pangan|lestari|\d+\s+Jan|\d+\s+Feb|\d{4,}|9910)|$)', desc, re.I)
+        m = re.search(r'\bDARI\s+(.+?)(?:\s+(?:Transfer|Fee|Pelunasan|bayar|Byr|nota|kerupuk|marinasi|warkop|finna|ffc|bwi|toko|\d+\s+Jan|\d+\s+Feb|\d{4,}|9910)|$)', up, re.I)
         if m:
             name = m.group(1).strip()
-            
-            # IMPROVE: Ambil UPPERCASE words (nama customer biasanya huruf besar di Mandiri)
-            words = name.split()
-            
-            # Filter: ambil words yang UPPERCASE atau Title Case yang meaningful
-            meaningful_words = []
-            for w in words:
-                # Skip single digit codes, pure numbers
-                if re.match(r'^\d+$', w):
-                    continue
-                # Skip very short codes like "X", "A", "B" (unless after we have real names)
-                if len(w) == 1 and not meaningful_words:
-                    continue
-                # Prefer UPPERCASE words (customer names in Mandiri are usually CAPS)
-                if w == w.upper() and len(w) >= 2:
-                    meaningful_words.append(w)
-                elif w[0].isupper() and len(w) >= 3 and not meaningful_words:
-                    # Accept Title Case if no meaningful words yet (fallback)
-                    meaningful_words.append(w)
-            
-            # If we found meaningful words, use them
-            if meaningful_words:
-                name = ' '.join(meaningful_words[:5]).strip()  # Max 5 words
-            
             # Buang angka detik 1-2 digit di tengah nama (mis: "ANJAR 51 RAKHMA" → "ANJAR RAKHMA")
-            name = re.sub(r'\s+\d{1,2}\s+', ' ', name).strip()
             name = re.sub(r'\b\d{1,2}\b', '', name).strip()
-            
             # Buang kode embedded di akhir (Nurul99101 → Nurul)
             name = re.sub(r'\d{3,}.*$', '', name).strip()
             name = re.sub(r'\s{2,}', ' ', name).strip()
-            
             if len(name) >= 3 and not re.match(r'^[\d\s]+$', name):
-                # Return dengan proper title casing untuk nama yang ALL CAPS
-                if name == name.upper():
-                    # Jika sudah ALL CAPS, gunakan .title() untuk lebih readable
-                    return name.title()
-                else:
-                    return name
+                return name.title()
 
     if ' | ' in desc:
         parts = desc.split(' | ')
@@ -1769,21 +1738,17 @@ def _rtgs_is_own_or_generic(desc, company_name):
 
 def _categorize(desc, company_name='', debet=0, kredit=0):
     """
-    Filosofi IMPROVED untuk Bank Mandiri:
-    - Kredit (incoming money) dari nama besar (UPPERCASE) = Penjualan
-    - Default kredit dari luar = Penjualan (unless explicitly non-sales)
-    - Better handling of Mandiri MCM/RTGS/InhouseTrf formats
+    Filosofi AGRESIF — default kredit dari luar = Penjualan, koreksi manual jika salah.
 
     URUTAN:
       1. Debet saja → Non penjualan
       2. Kredit = 0 → Non penjualan
-      3. Nama rekening sendiri di deskripsi → Non penjualan (kecuali ada DARI nama lain)
+      3. Nama rekening sendiri di deskripsi → Non penjualan
       4. NON_PENJ_WHOLE (whole-word regex) → Non penjualan
       5. NON_PENJ_KW (substring) → Non penjualan
       6. RTGS# → Penjualan kecuali sender = nama rekening sendiri
       7. PENJ_KW eksplisit → Penjualan
-      8. Mandiri MCM/RTGS dengan nama BESAR = Penjualan (NEW)
-      9. DEFAULT: semua kredit dari luar = Penjualan
+      8. DEFAULT: semua kredit dari luar = Penjualan
     """
     import re as _re
     up = (desc or '').upper()
@@ -1833,6 +1798,7 @@ def _categorize(desc, company_name='', debet=0, kredit=0):
         # Tidak ada nama pengirim lain → memang Non penjualan
         return 'Non penjualan'
 
+
     # Rule 6: Whole-word keywords
     for pattern in NON_PENJ_WHOLE:
         if _re.search(pattern, up):
@@ -1849,30 +1815,12 @@ def _categorize(desc, company_name='', debet=0, kredit=0):
             return 'Non penjualan'
         return 'Penjualan'
 
-    # Rule 9: Keyword Penjualan eksplisit
+    # Rule 7: Keyword Penjualan eksplisit
     for kw in PENJ_KW:
         if kw.upper() in up:
             return 'Penjualan'
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # RULE 10: MANDIRI-SPECIFIC — MCM/RTGS/InhouseTrf dengan NAMA BESAR
-    # ══════════════════════════════════════════════════════════════════════════
-    # Jika ada MCM, RTGS, atau InhouseTrf, dan ada UPPERCASE NAME setelah DARI
-    # → ini almost certainly Penjualan (customer payment)
-    if any(code in up for code in ('MCM', 'RTGS', 'INHOUSTRF', 'INHOUSETRF')):
-        # Cek apakah ada pattern "DARI NAMA_BESAR"
-        m_dari = _re.search(r'\bDARI\s+([A-Z][A-Z\s]+?)(?:\s+(?:\d{4,}|9910|bayar|nota|belanja|Transfer|Fee)|$)', up)
-        if m_dari:
-            dari_nama = m_dari.group(1).strip()
-            # Jika nama setelah DARI sebagian besar UPPERCASE (bukan single letter words)
-            # → tinggi kemungkinan ini Penjualan dari customer
-            words = dari_nama.split()
-            caps_words = [w for w in words if w == w.upper() and len(w) >= 2]
-            if len(caps_words) >= 2 or (len(caps_words) >= 1 and len(words) <= 2):
-                # Strong signal: multiple UPPERCASE words = company/person name
-                return 'Penjualan'
-
-    # Rule 11: DEFAULT — semua kredit dari pihak luar = Penjualan
+    # Rule 8: DEFAULT — semua kredit dari pihak luar = Penjualan
     return 'Penjualan'
 
 
