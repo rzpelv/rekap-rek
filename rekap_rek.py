@@ -411,66 +411,14 @@ def _parse_pdf_bca(pdf_path):
 
 
 
-def _detect_bank_name(meta):
-    """Deteksi nama bank dari metadata atau company name."""
-    company = (meta.get('companyName', '') or '').upper()
-    account = (meta.get('accountNo', '') or '')
-    
-    # Deteksi berdasarkan nomor rekening atau pattern
-    if account.startswith('114') or account.startswith('115'):
-        return "MANDIRI"
-    if account.startswith('021'):
-        return "BRI"
-    if account.startswith('007'):
-        return "BCA"
-    if 'MANDIRI' in company or '14' in account[:3]:
-        return "MANDIRI"
-    if 'BRI' in company:
-        return "BRI"
-    if 'BCA' in company:
-        return "BCA"
-    if 'BNI' in company:
-        return "BNI"
-    
-    # Default
-    return "BANK"
-
-
 def _is_mandiri_pdf(pdf_path):
-    """Deteksi format rekening koran Bank Mandiri dengan multi-strategy."""
+    """Deteksi format rekening koran Bank Mandiri."""
     try:
         with pdfplumber.open(pdf_path) as pdf:
-            # Strategy 1: Check first 80 words for typical Mandiri markers
             words = pdf.pages[0].extract_words()
-            text  = ' '.join(w['text'] for w in words[:150])  # Extended to 150 words
-            
-            mandiri_markers = [
-                'Laporan Rekening Koran',
-                'Account Statement Report',
-                'LAPORAN REKENING KORAN',
-                'PT BANK MANDIRI',
-                'BANK MANDIRI'
-            ]
-            
-            # Check for Mandiri-specific keywords
-            has_mandiri_header = any(m in text for m in mandiri_markers)
-            has_mandiri_codes = 'MCM' in text or 'InhouseTrf' in text or 'RTGS' in text
-            
-            # Strategy 2: Check page structure for Mandiri layout (extract_text)
-            try:
-                full_text = pdf.pages[0].extract_text()
-                if full_text:
-                    has_posting_date = 'Posting Date' in full_text
-                    has_period = 'Period' in full_text and ('- ' in full_text)
-                    has_opening = 'Opening Balance' in full_text
-                    
-                    if has_mandiri_header and (has_mandiri_codes or (has_posting_date and has_period)):
-                        return True
-            except:
-                pass
-            
-            # Fallback to basic detection
-            return has_mandiri_header and has_mandiri_codes
+            text  = ' '.join(w['text'] for w in words[:80])
+            return ('Laporan Rekening Koran' in text or 'Account Statement Report' in text) \
+                   and ('MCM' in text or 'InhouseTrf' in text)
     except:
         return False
 
@@ -542,35 +490,10 @@ def _parse_pdf_mandiri(pdf_path):
                 full = ' '.join(l.strip() for l in raw if l.strip())
                 m = re.search(r'\b(\d{13})\b', full)
                 if m: meta['accountNo'] = m.group(1)
-                
-                # Extract company name - improved pattern matching
-                # Try multiple patterns
-                company_patterns = [
-                    r'\d{13}\s+IDR\s+(.+?)(?:SEKAR|PT\s|[A-Z]{2,}\s+[A-Z]|$)',  # Standard pattern
-                    r'IDR\s+(.+?)(?:Cabang|Branch|AREA)',  # Alternative pattern
-                    r'Account Name\s+:\s+(.+?)(?:\n|\s{2,})',
-                ]
-                for pattern in company_patterns:
-                    m = re.search(pattern, full)
-                    if m:
-                        nm = m.group(1).strip()
-                        # Clean up the name
-                        nm = re.sub(r'\s+', ' ', nm)
-                        if nm and len(nm) < 80:  # Reasonable length
-                            meta['companyName'] = nm
-                            break
-                
-                # If still empty, try to extract from account line
-                if not meta['companyName']:
-                    lines = full.split()
-                    for i, line in enumerate(lines):
-                        if line == 'IDR' and i + 1 < len(lines):
-                            # Take next 3-5 words as company name
-                            company = ' '.join(lines[i+1:i+5])
-                            if company:
-                                meta['companyName'] = company.split('Cabang')[0].strip()
-                                break
-                
+                m = re.search(r'\d{13}\s+IDR\s+(.+?)(?:\s{2,}|$)', full)
+                if m:
+                    nm = m.group(1).strip()
+                    meta['companyName'] = nm[:len(nm)//2].strip()
                 m = re.search(r'Period\s+(\d{2})\s+(\w+)\s+(\d{4})\s+-\s+(\d{2})\s+(\w+)\s+(\d{4})', full)
                 if m:
                     d1,b1,y1,d2,b2,y2 = m.groups()
@@ -1581,53 +1504,22 @@ def _extract_customer_name(desc):
         if name and len(name) >= 2:
             return name.title()
         return None
-    # ── FORMAT MANDIRI khusus: nama setelah "DARI" dengan UPPERCASE handling ───────────
+    # ── FORMAT MANDIRI khusus: nama setelah "DARI" tanpa separator ───────────
     # "MCM InhouseTrf DARI NURUL KURNIAWATI bayar tepung Nurul99101"
-    # "RTGS DARI HARDHANI JUNIARTI 9910X"
-    # Ambil NAMA BESAR (UPPERCASE) setelah DARI, stop di: kata keterangan, kode 9910x, Transfer Fee, angka
+    # Ambil nama setelah DARI, stop di: kata keterangan, kode 9910x, Transfer Fee, angka
+    # Format: "... MCM InhouseTrf DARI NAMA [detik] keterangan..."
+    # Tangkap nama: stop di kata keterangan, angka panjang, atau kode
     if 'DARI' in up and ' | ' not in desc:
-        m = re.search(r'\bDARI\s+(.+?)(?:\s+(?:Transfer|Fee|Pelunasan|bayar|Byr|nota|kerupuk|marinasi|warkop|finna|ffc|bwi|toko|belanja|pembayaran|pangan|lestari|\d+\s+Jan|\d+\s+Feb|\d{4,}|9910)|$)', desc, re.I)
+        m = re.search(r'\bDARI\s+(.+?)(?:\s+(?:Transfer|Fee|Pelunasan|bayar|Byr|nota|kerupuk|marinasi|warkop|finna|ffc|bwi|toko|\d+\s+Jan|\d+\s+Feb|\d{4,}|9910)|$)', up, re.I)
         if m:
             name = m.group(1).strip()
-            
-            # IMPROVE: Ambil UPPERCASE words (nama customer biasanya huruf besar di Mandiri)
-            words = name.split()
-            
-            # Filter: ambil words yang UPPERCASE atau Title Case yang meaningful
-            meaningful_words = []
-            for w in words:
-                # Skip single digit codes, pure numbers
-                if re.match(r'^\d+$', w):
-                    continue
-                # Skip very short codes like "X", "A", "B" (unless after we have real names)
-                if len(w) == 1 and not meaningful_words:
-                    continue
-                # Prefer UPPERCASE words (customer names in Mandiri are usually CAPS)
-                if w == w.upper() and len(w) >= 2:
-                    meaningful_words.append(w)
-                elif w[0].isupper() and len(w) >= 3 and not meaningful_words:
-                    # Accept Title Case if no meaningful words yet (fallback)
-                    meaningful_words.append(w)
-            
-            # If we found meaningful words, use them
-            if meaningful_words:
-                name = ' '.join(meaningful_words[:5]).strip()  # Max 5 words
-            
             # Buang angka detik 1-2 digit di tengah nama (mis: "ANJAR 51 RAKHMA" → "ANJAR RAKHMA")
-            name = re.sub(r'\s+\d{1,2}\s+', ' ', name).strip()
             name = re.sub(r'\b\d{1,2}\b', '', name).strip()
-            
             # Buang kode embedded di akhir (Nurul99101 → Nurul)
             name = re.sub(r'\d{3,}.*$', '', name).strip()
             name = re.sub(r'\s{2,}', ' ', name).strip()
-            
             if len(name) >= 3 and not re.match(r'^[\d\s]+$', name):
-                # Return dengan proper title casing untuk nama yang ALL CAPS
-                if name == name.upper():
-                    # Jika sudah ALL CAPS, gunakan .title() untuk lebih readable
-                    return name.title()
-                else:
-                    return name
+                return name.title()
 
     if ' | ' in desc:
         parts = desc.split(' | ')
@@ -1769,21 +1661,17 @@ def _rtgs_is_own_or_generic(desc, company_name):
 
 def _categorize(desc, company_name='', debet=0, kredit=0):
     """
-    Filosofi IMPROVED untuk Bank Mandiri:
-    - Kredit (incoming money) dari nama besar (UPPERCASE) = Penjualan
-    - Default kredit dari luar = Penjualan (unless explicitly non-sales)
-    - Better handling of Mandiri MCM/RTGS/InhouseTrf formats
+    Filosofi AGRESIF — default kredit dari luar = Penjualan, koreksi manual jika salah.
 
     URUTAN:
       1. Debet saja → Non penjualan
       2. Kredit = 0 → Non penjualan
-      3. Nama rekening sendiri di deskripsi → Non penjualan (kecuali ada DARI nama lain)
+      3. Nama rekening sendiri di deskripsi → Non penjualan
       4. NON_PENJ_WHOLE (whole-word regex) → Non penjualan
       5. NON_PENJ_KW (substring) → Non penjualan
       6. RTGS# → Penjualan kecuali sender = nama rekening sendiri
       7. PENJ_KW eksplisit → Penjualan
-      8. Mandiri MCM/RTGS dengan nama BESAR = Penjualan (NEW)
-      9. DEFAULT: semua kredit dari luar = Penjualan
+      8. DEFAULT: semua kredit dari luar = Penjualan
     """
     import re as _re
     up = (desc or '').upper()
@@ -1833,6 +1721,7 @@ def _categorize(desc, company_name='', debet=0, kredit=0):
         # Tidak ada nama pengirim lain → memang Non penjualan
         return 'Non penjualan'
 
+
     # Rule 6: Whole-word keywords
     for pattern in NON_PENJ_WHOLE:
         if _re.search(pattern, up):
@@ -1849,30 +1738,12 @@ def _categorize(desc, company_name='', debet=0, kredit=0):
             return 'Non penjualan'
         return 'Penjualan'
 
-    # Rule 9: Keyword Penjualan eksplisit
+    # Rule 7: Keyword Penjualan eksplisit
     for kw in PENJ_KW:
         if kw.upper() in up:
             return 'Penjualan'
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # RULE 10: MANDIRI-SPECIFIC — MCM/RTGS/InhouseTrf dengan NAMA BESAR
-    # ══════════════════════════════════════════════════════════════════════════
-    # Jika ada MCM, RTGS, atau InhouseTrf, dan ada UPPERCASE NAME setelah DARI
-    # → ini almost certainly Penjualan (customer payment)
-    if any(code in up for code in ('MCM', 'RTGS', 'INHOUSTRF', 'INHOUSETRF')):
-        # Cek apakah ada pattern "DARI NAMA_BESAR"
-        m_dari = _re.search(r'\bDARI\s+([A-Z][A-Z\s]+?)(?:\s+(?:\d{4,}|9910|bayar|nota|belanja|Transfer|Fee)|$)', up)
-        if m_dari:
-            dari_nama = m_dari.group(1).strip()
-            # Jika nama setelah DARI sebagian besar UPPERCASE (bukan single letter words)
-            # → tinggi kemungkinan ini Penjualan dari customer
-            words = dari_nama.split()
-            caps_words = [w for w in words if w == w.upper() and len(w) >= 2]
-            if len(caps_words) >= 2 or (len(caps_words) >= 1 and len(words) <= 2):
-                # Strong signal: multiple UPPERCASE words = company/person name
-                return 'Penjualan'
-
-    # Rule 11: DEFAULT — semua kredit dari pihak luar = Penjualan
+    # Rule 8: DEFAULT — semua kredit dari pihak luar = Penjualan
     return 'Penjualan'
 
 
@@ -1976,9 +1847,7 @@ def build_excel(all_transactions, meta, out_path):
     ws = wb.create_sheet("Summary")
 
     ws.merge_cells('A1:H1')
-    # Deteksi nama bank dari metadata atau gunakan "BANK"
-    bank_name = _detect_bank_name(meta)
-    ws['A1'] = f"REKAP REKENING KORAN {bank_name}"
+    ws['A1'] = "REKAP REKENING KORAN BRI"
     ws['A1'].font      = Font(name='Arial', bold=True, color=CLR["title_fg"], size=13)
     ws['A1'].fill      = af(CLR["title_bg"])
     ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
