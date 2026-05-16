@@ -141,11 +141,6 @@ input,select{font-family:inherit;color:inherit}
 .file-rm:hover{background:rgba(248,113,113,.15);color:var(--red)}
 
 .action-row{margin-top:20px;display:flex;justify-content:flex-end;gap:10px}
-.ai-mini-status{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--text-2);font-size:12.5px;font-weight:600}
-.ai-mini-status .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 4px rgba(121,134,174,.12);flex-shrink:0}
-.ai-mini-status.active .dot{background:var(--green);box-shadow:0 0 0 4px rgba(52,211,153,.14)}
-.ai-mini-status.off .dot{background:var(--orange);box-shadow:0 0 0 4px rgba(255,138,61,.14)}
-.ai-mini-status .model{color:var(--primary);font-family:'IBM Plex Mono',monospace;font-size:11.5px}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:12px;font-weight:600;font-size:14px;transition:all .15s;cursor:pointer;letter-spacing:-.01em;font-family:'Space Grotesk',sans-serif}
 .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-deep));color:#fff;box-shadow:0 8px 24px -6px rgba(77,143,229,.6)}
@@ -232,22 +227,6 @@ input,select{font-family:inherit;color:inherit}
 .kpi.red .kpi-val{color:var(--red)}
 .kpi.orange .kpi-val{color:var(--orange)}
 .kpi-sub{font-size:11.5px;color:var(--muted);margin-top:5px;font-weight:500}
-
-.ai-panel{margin-top:20px;background:linear-gradient(135deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;position:relative;overflow:hidden}
-.ai-panel::before{content:"";position:absolute;right:-80px;top:-100px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.12) 0%,transparent 70%);pointer-events:none}
-.ai-panel-main,.ai-panel-actions{position:relative;z-index:1}
-.ai-panel-kicker{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.8px;text-transform:uppercase}
-.ai-panel h3{font-size:17px;font-weight:700;letter-spacing:-.4px;margin-top:3px}
-.ai-panel-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);margin-top:8px;font-weight:600;flex-wrap:wrap}
-.ai-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:99px;background:rgba(255,138,61,.12);border:1px solid rgba(255,138,61,.25);color:var(--orange);font-size:11px;font-weight:700}
-.ai-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
-.ai-pill.active{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.25);color:var(--green)}
-.ai-summary-box{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:rgba(7,13,31,.18);padding:14px 16px;color:var(--text-2);font-size:13px;line-height:1.55;white-space:pre-wrap;min-height:54px}
-[data-theme="light"] .ai-summary-box,[data-theme="warm"] .ai-summary-box{background:rgba(30,53,128,.04)}
-.ai-panel-actions{display:flex;align-items:flex-start;gap:10px}
-.btn-ai{background:linear-gradient(135deg,var(--primary),var(--cyan));color:#fff;box-shadow:0 8px 24px -8px rgba(34,211,238,.55);white-space:nowrap}
-.btn-ai:hover{transform:translateY(-1px)}
-.btn-ai:disabled{opacity:.55;cursor:not-allowed;transform:none}
 
 .chart-row{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:20px}
 .chart{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
@@ -400,8 +379,6 @@ tbody td{padding:12px 14px;vertical-align:middle}
   .metric-hero{grid-template-columns:1fr;gap:20px;padding:24px}
   .kpi-row{grid-template-columns:repeat(3,1fr)}
   .chart-row{grid-template-columns:1fr}
-  .ai-panel{grid-template-columns:1fr}
-  .ai-panel-actions{justify-content:flex-start}
   .proc-feeds{grid-template-columns:repeat(2,1fr)}
 }
 
@@ -440,8 +417,6 @@ tbody td{padding:12px 14px;vertical-align:middle}
   .kpi-row{grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .kpi{padding:16px 14px}
   .kpi-val{font-size:20px}
-  .ai-panel{grid-template-columns:1fr;gap:14px;margin-top:14px;padding:16px 14px}
-  .ai-panel-actions .btn{width:100%;justify-content:center}
   .chart-row{grid-template-columns:1fr;gap:12px;margin-top:14px}
   .tbl{margin-top:14px;border-radius:12px}
   .tbl-head{flex-direction:column;align-items:flex-start;gap:10px}
@@ -592,10 +567,6 @@ tbody td{padding:12px 14px;vertical-align:middle}
           </label>
           <div class="file-list" id="fileList"></div>
           <div id="uploadAlert" class="alert"></div>
-          <div class="ai-mini-status" id="aiMiniStatus">
-            <span class="dot"></span>
-            <span id="aiMiniText">Memeriksa AI lokal...</span>
-          </div>
           <div class="action-row">
             <button class="btn btn-primary" id="prosesBtn" disabled onclick="startProses()">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -690,24 +661,6 @@ tbody td{padding:12px 14px;vertical-align:middle}
           </div>
           <div class="kpi-val mono" id="k-saldo">Rp 0</div>
           <div class="kpi-sub" id="k-saldo-sub">—</div>
-        </div>
-      </div>
-
-      <div class="ai-panel">
-        <div class="ai-panel-main">
-          <div class="ai-panel-kicker">AI lokal</div>
-          <h3>Ringkasan dan validasi otomatis</h3>
-          <div class="ai-panel-status">
-            <span class="ai-pill" id="aiReviewPill">Memeriksa</span>
-            <span id="aiReviewText">Status AI belum dicek.</span>
-          </div>
-          <div class="ai-summary-box" id="aiSummaryBox">Klik tombol ringkasan setelah data selesai diproses.</div>
-        </div>
-        <div class="ai-panel-actions">
-          <button class="btn btn-ai" id="aiSummaryBtn" onclick="generateAiSummary()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/></svg>
-            Buat Ringkasan AI
-          </button>
         </div>
       </div>
 
@@ -853,8 +806,6 @@ let currentKat = "";
 let currentPage = 1;
 let sessionId = "";
 let metaData = {};
-let aiStatus = { active:false, model:null, reason:"Belum dicek" };
-let aiUsed = false;
 const PAGE = 100;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -871,78 +822,6 @@ function fmtBig(n) {
 function esc(s) {
   return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-
-// ── AI Status ──────────────────────────────────────────────────────────────
-async function checkAiStatus() {
-  try {
-    const res = await fetch("/ai-status", { cache:"no-store" });
-    aiStatus = await res.json();
-  } catch(e) {
-    aiStatus = { active:false, model:null, reason:"Server AI tidak merespons" };
-  }
-  updateAiStatusUI();
-}
-
-function updateAiStatusUI() {
-  const active = !!aiStatus.active;
-  const model = aiStatus.model ? ` <span class="model">${esc(aiStatus.model)}</span>` : "";
-  const mini = document.getElementById("aiMiniStatus");
-  const miniText = document.getElementById("aiMiniText");
-  if (mini && miniText) {
-    mini.classList.toggle("active", active);
-    mini.classList.toggle("off", !active);
-    miniText.innerHTML = active
-      ? `AI aktif${model} · kategori otomatis akan dibantu AI`
-      : `AI tidak aktif · aplikasi tetap memakai rule-based`;
-  }
-
-  const pill = document.getElementById("aiReviewPill");
-  const text = document.getElementById("aiReviewText");
-  const btn = document.getElementById("aiSummaryBtn");
-  if (pill && text) {
-    pill.classList.toggle("active", active);
-    pill.textContent = active ? "AI aktif" : "AI nonaktif";
-    if (sessionId) {
-      text.textContent = active
-        ? (aiUsed ? `Kategorisasi transaksi memakai ${aiStatus.model || "AI lokal"}.` : `AI aktif, tetapi proses terakhir memakai rule-based.`)
-        : `Ollama belum aktif, hasil saat ini memakai rule-based.`;
-    } else {
-      text.textContent = active
-        ? `Model ${aiStatus.model || "AI lokal"} siap dipakai saat PDF diproses.`
-        : (aiStatus.reason || "AI lokal belum aktif.");
-    }
-  }
-  if (btn) btn.disabled = !active || !sessionId;
-}
-
-async function generateAiSummary() {
-  if (!sessionId) { alert("Proses PDF dulu sebelum membuat ringkasan AI."); return; }
-  const btn = document.getElementById("aiSummaryBtn");
-  const box = document.getElementById("aiSummaryBox");
-  btn.disabled = true;
-  btn.textContent = "Membuat ringkasan...";
-  box.textContent = "AI sedang membaca pola transaksi...";
-  try {
-    const res = await fetch("/ai-summary", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ session_id:sessionId }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      box.textContent = data.error || "AI gagal membuat ringkasan.";
-      await checkAiStatus();
-      return;
-    }
-    box.textContent = data.summary || "AI tidak mengembalikan ringkasan.";
-  } catch(e) {
-    box.textContent = "Koneksi ke AI gagal: " + e.message;
-  } finally {
-    btn.disabled = !aiStatus.active || !sessionId;
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/></svg> Buat Ringkasan AI';
-  }
-}
-checkAiStatus();
 
 // ── Stepper ────────────────────────────────────────────────────────────────
 const _stepLabels = ["Upload PDF","Memproses","Review & Edit","Download"];
@@ -1056,7 +935,6 @@ async function uploadAndProcess() {
     sessionId = data.session_id;
     metaData  = data.meta;
     allTx     = data.transactions;
-    aiUsed    = !!data.ai_used;
     filteredTx = [...allTx];
     finishProcAnim();
     setTimeout(() => { loadResults(); goScreen(3); }, 400);
@@ -1071,7 +949,6 @@ async function uploadAndProcess() {
 function loadResults() {
   updateMeta();
   updateStats();
-  updateAiStatusUI();
   renderTopCustomers();
   renderBars();
   renderDonut();
@@ -1303,9 +1180,7 @@ async function downloadExcel() {
 function resetAll() {
   selectedFiles=[]; renderFiles();
   document.getElementById("searchInp").value="";
-  currentKat=""; currentPage=1; sessionId=""; aiUsed=false;
-  document.getElementById("aiSummaryBox").textContent = "Klik tombol ringkasan setelah data selesai diproses.";
-  updateAiStatusUI();
+  currentKat=""; currentPage=1; sessionId="";
   document.querySelectorAll("#seg .seg-opt").forEach((x,i)=>x.classList.toggle("active",i===0));
   goScreen(1);
 }

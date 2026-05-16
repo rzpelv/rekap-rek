@@ -1031,15 +1031,46 @@ def _parse_pdf_bni(pdf_path):
     return meta, transactions
 
 
+def _clean_company_name(name):
+    """Rapikan nama pemilik rekening yang kadang terduplikasi/terpotong di PDF."""
+    name = re.sub(r'\s+', ' ', (name or '')).strip()
+    if not name:
+        return name
+
+    # Beberapa statement Mandiri mengekstrak "PANGAN LESTARI PANGAN LESTARI";
+    # pemotongan setengah string lama bisa menghasilkan "PANGAN LESTARI PAN".
+    for n in range(len(name) // 2, 2, -1):
+        left = name[:n].strip()
+        if name.upper().startswith((left + ' ' + left).upper()):
+            return left.title()
+
+    if re.match(r'^PANGAN\s+LESTARI(?:\s+PAN)?$', name, re.I):
+        return 'Pangan Lestari'
+
+    return name.title() if name.isupper() else name
+
+
 def parse_pdf(pdf_path):
     """Auto-detect format BRI, BCA, Mandiri, atau BNI, lalu parse."""
     if _is_bca_pdf(pdf_path):
-        return _parse_pdf_bca(pdf_path)
+        meta, txs = _parse_pdf_bca(pdf_path)
+        meta['bank'] = 'BCA'
+        meta['companyName'] = _clean_company_name(meta.get('companyName', ''))
+        return meta, txs
     if _is_mandiri_pdf(pdf_path):
-        return _parse_pdf_mandiri(pdf_path)
+        meta, txs = _parse_pdf_mandiri(pdf_path)
+        meta['bank'] = 'Mandiri'
+        meta['companyName'] = _clean_company_name(meta.get('companyName', ''))
+        return meta, txs
     if _is_bni_pdf(pdf_path):
-        return _parse_pdf_bni(pdf_path)
-    return _parse_pdf_bri(pdf_path)
+        meta, txs = _parse_pdf_bni(pdf_path)
+        meta['bank'] = 'BNI'
+        meta['companyName'] = _clean_company_name(meta.get('companyName', ''))
+        return meta, txs
+    meta, txs = _parse_pdf_bri(pdf_path)
+    meta['bank'] = 'BRI'
+    meta['companyName'] = _clean_company_name(meta.get('companyName', ''))
+    return meta, txs
 
 
 def _parse_pdf_bri(pdf_path):

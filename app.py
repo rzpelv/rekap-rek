@@ -10,9 +10,19 @@ log = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-# Session dir — di dalam folder app agar persistent di Railway
+# Session dir
 SESSION_DIR = Path(__file__).parent / 'sessions'
 SESSION_DIR.mkdir(exist_ok=True)
+
+# ── AI Helper (opsional, hanya aktif jika Ollama berjalan) ────────────────────
+try:
+    import ai_helper as ai
+    AI_AVAILABLE = True
+    log.info("AI Helper loaded ✓")
+except ImportError:
+    AI_AVAILABLE = False
+    log.info("AI Helper tidak ditemukan, pakai rule-based saja")
+
 
 def _session_path(session_id):
     safe = ''.join(c for c in session_id if c.isalnum() or c in '_-')[:80]
@@ -23,22 +33,20 @@ def _save_session(session_id, meta, transactions):
     try:
         with open(path, 'wb') as f:
             pickle.dump({'meta': meta, 'transactions': transactions, 'ts': time.time()}, f)
-        log.info(f"Session saved: {session_id} → {path} ({path.stat().st_size} bytes)")
+        log.info(f"Session saved: {session_id} ({path.stat().st_size} bytes)")
     except Exception as e:
         log.error(f"Failed to save session: {e}")
 
 def _load_session(session_id):
     path = _session_path(session_id)
-    log.info(f"Loading session: {session_id} → {path} exists={path.exists()}")
     if not path.exists():
-        # List semua session yang ada untuk debug
         existing = list(SESSION_DIR.glob('*.pkl'))
-        log.warning(f"Session not found. Available sessions: {[p.name for p in existing]}")
+        log.warning(f"Session not found. Available: {[p.name for p in existing]}")
         return None
     try:
         with open(path, 'rb') as f:
             data = pickle.load(f)
-        log.info(f"Session loaded OK: {len(data.get('transactions',[]))} transactions")
+        log.info(f"Session loaded: {len(data.get('transactions',[]))} transactions")
         return data
     except Exception as e:
         log.error(f"Failed to load session: {e}")
@@ -61,7 +69,7 @@ def parse_pdfs(files):
     meta_combined = {
         "accountNo": "", "companyName": "", "period": "",
         "opening": 0, "totalDebet": 0, "totalKredit": 0, "closing": 0,
-        "currency": "IDR"
+        "currency": "IDR", "bank": ""
     }
     periods = []
     file_results = []
@@ -80,6 +88,7 @@ def parse_pdfs(files):
                     'file': fname,
                     'rekening': meta['accountNo'],
                     'nama': meta['companyName'],
+                    'bank': meta.get('bank', ''),
                     'periode': meta['period'],
                     'jumlah': len(txs),
                     'penjualan': sum(1 for t in txs if t['kategori'] == 'Penjualan'),
@@ -87,6 +96,7 @@ def parse_pdfs(files):
                 if not meta_combined['accountNo'] and meta['accountNo']:
                     meta_combined['accountNo']   = meta['accountNo']
                     meta_combined['companyName'] = meta['companyName']
+                    meta_combined['bank']        = meta.get('bank', '')
                 meta_combined['totalDebet']  += meta.get('totalDebet', 0)
                 meta_combined['totalKredit'] += meta.get('totalKredit', 0)
                 if meta.get('period'):
@@ -109,9 +119,47 @@ def parse_pdfs(files):
     return all_transactions, meta_combined, file_results
 
 
+# ── Routes ─────────────────────────────────────────────────────────────────────
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/ai-status')
+def ai_status():
+    """Cek apakah Ollama/AI sedang aktif."""
+    if not AI_AVAILABLE:
+        return jsonify({'active': False, 'reason': 'ai_helper tidak terinstall'})
+    active = ai.is_available()
+    model = ai.current_model() if active else None
+    return jsonify({
+        'active': active,
+        'model': model,
+        'reason': f'Ollama berjalan — model {model} siap' if active else 'Ollama aktif, tapi model AI belum terinstall. Jalankan: ollama pull qwen2.5:0.5b'
+    })
+
+
+@app.route('/ai-summary', methods=['POST'])
+def ai_summary():
+    """Generate ringkasan AI dari data transaksi yang sudah diproses."""
+    if not AI_AVAILABLE or not ai.is_available():
+        return jsonify({'error': 'AI tidak aktif'}), 503
+
+    data = request.get_json(silent=True) or {}
+    session_id = data.get('session_id', '')
+    if not session_id:
+        return jsonify({'error': 'session_id kosong'}), 400
+
+    session = _load_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session tidak ditemukan'}), 404
+
+    summary = ai.generate_summary(session['meta'], session['transactions'])
+    if not summary:
+        return jsonify({'error': 'AI gagal generate summary'}), 500
+
+    return jsonify({'summary': summary})
 
 
 @app.route('/proses', methods=['POST'])
@@ -125,6 +173,29 @@ def proses():
     if not all_transactions:
         return jsonify({'error': 'Tidak ada transaksi berhasil dibaca'}), 400
 
+    # ── Kategorisasi AI (jika Ollama aktif) ──────────────────────────────────
+    ai_used = False
+    if AI_AVAILABLE and ai.is_available():
+        log.info("[AI] Memulai kategorisasi AI...")
+        try:
+            ai_results = ai.kategorisasi_batch([
+                {'no': i+1, 'desc': t['desc'],
+                 'kredit': t.get('kredit', 0), 'debet': t.get('debet', 0)}
+                for i, t in enumerate(all_transactions)
+            ])
+            if ai_results:
+                ai_map = {r['no']: r for r in ai_results}
+                for i, tx in enumerate(all_transactions):
+                    no = i + 1
+                    if no in ai_map:
+                        tx['kategori'] = ai_map[no].get('kategori', tx['kategori'])
+                        if ai_map[no].get('customer'):
+                            tx['customer'] = ai_map[no]['customer']
+                ai_used = True
+                log.info(f"[AI] Kategorisasi selesai: {len(ai_results)} transaksi")
+        except Exception as e:
+            log.error(f"[AI] Kategorisasi gagal, fallback rule-based: {e}")
+
     session_id = (meta.get('accountNo') or 'sesi') + '_' + str(int(time.time()))
     _save_session(session_id, meta, all_transactions)
 
@@ -134,6 +205,7 @@ def proses():
         'files': file_results,
         'total_tx': len(all_transactions),
         'total_penj': sum(1 for t in all_transactions if t['kategori'] == 'Penjualan'),
+        'ai_used': ai_used,
         'transactions': [
             {
                 'no': i + 1,
@@ -154,11 +226,19 @@ def proses():
 
 @app.route('/download', methods=['POST'])
 def download():
-    data       = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if data is None:
+        data = request.form.to_dict()
+        if isinstance(data.get('overrides'), str):
+            try:
+                data['overrides'] = json.loads(data['overrides'])
+            except json.JSONDecodeError:
+                data['overrides'] = []
     session_id = data.get('session_id', '')
     overrides  = data.get('overrides', [])
-
-    log.info(f"Download request: session_id={session_id!r}")
+    filename   = secure_filename(data.get('filename') or '')
+    if not filename.lower().endswith('.xlsx'):
+        filename = ''
 
     if not session_id:
         return jsonify({'error': 'session_id kosong. Silakan proses ulang PDF.'}), 400
@@ -170,7 +250,6 @@ def download():
     meta = session['meta']
     txs  = [dict(t) for t in session['transactions']]
 
-    # Terapkan override kategori dan customer dari user
     kat_map  = {o['no']: o['kategori'] for o in overrides if 'no' in o and 'kategori' in o}
     cust_map = {o['no']: o['customer'] for o in overrides if 'no' in o and 'customer' in o}
     for i, tx in enumerate(txs):
@@ -192,17 +271,17 @@ def download():
     finally:
         try:
             os.unlink(tmp_path)
-        except:
+        except Exception:
             pass
 
     return send_file(
         buf,
         as_attachment=True,
-        download_name=f"rekap_{acc}.xlsx",
+        download_name=filename or f"rekap_{acc}.xlsx",
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
