@@ -13,16 +13,52 @@ Upload PDF e-statement bank, otomatis diproses jadi file Excel rekap dengan:
 
 ---
 
-## Jalankan Lokal
+## ⚡ Cara Cepat (One-Click Auto Setup)
+
+Tersedia script auto-installer yang akan **otomatis install semua dependency**
+(Python, Git, Ollama, model AI) lalu jalankan aplikasi. Yang sudah terinstall
+akan di-bypass.
+
+### Windows
+
+1. Download/clone repo ini
+2. **Double-click `setup_dan_jalankan.bat`**
+3. Tunggu instalasi otomatis (Python, Git, Ollama via winget)
+4. Browser akan terbuka otomatis ke `http://localhost:8080`
+
+### macOS / Linux
+
+1. Download/clone repo ini
+2. Buka Terminal di folder repo, lalu:
+   ```bash
+   chmod +x setup_dan_jalankan.command
+   ./setup_dan_jalankan.command
+   ```
+   _Atau di macOS: klik kanan file `.command` → "Open"_
+3. Tunggu instalasi otomatis (Homebrew, Python, Git, Ollama)
+4. Browser akan terbuka otomatis ke `http://localhost:8080`
+
+> **Catatan:** Script akan tanya sebelum install Ollama (~2.5 GB untuk model AI).
+> Boleh skip kalau tidak butuh fitur AI — aplikasi tetap jalan dengan
+> kategorisasi keyword.
+
+---
+
+## Manual Install
+
+Kalau lebih suka kontrol manual:
 
 ```bash
 git clone https://github.com/rzpelv/rekap-rek.git
 cd rekap-rek
+python -m venv venv
+source venv/bin/activate           # Linux/Mac
+# venv\Scripts\activate            # Windows
 pip install -r requirements.txt
 python app.py
 ```
 
-Buka **http://localhost:5000**
+Buka **http://localhost:8080**
 
 ---
 
@@ -111,11 +147,13 @@ berfungsi normal dengan kategorisasi berbasis keyword.
 
 ```
 rekap-rek/
-├── app.py              # Flask web server (routes, session)
-├── rekap_rek.py        # Parser PDF (BCA, BRI, Mandiri, BNI) + Excel builder
-├── ai_helper.py        # Integrasi Ollama dengan Structured Outputs
+├── app.py                       # Flask web server (routes, session)
+├── rekap_rek.py                 # Parser PDF (BCA, BRI, Mandiri, BNI) + Excel builder
+├── ai_helper.py                 # Integrasi Ollama dengan Structured Outputs
 ├── templates/
-│   └── index.html      # Single-page UI
+│   └── index.html               # Single-page UI
+├── setup_dan_jalankan.bat       # Auto-installer Windows
+├── setup_dan_jalankan.command   # Auto-installer macOS/Linux
 ├── requirements.txt
 └── railway.json
 ```
