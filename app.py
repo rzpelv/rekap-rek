@@ -136,7 +136,7 @@ def ai_status():
     return jsonify({
         'active': active,
         'model': model,
-        'reason': f'Ollama berjalan — model {model} siap' if active else 'Ollama aktif, tapi model AI belum terinstall. Jalankan: ollama pull qwen2.5:0.5b'
+        'reason': f'Ollama berjalan — model {model} siap' if active else 'Ollama aktif, tapi model AI belum terinstall. Jalankan: ollama pull qwen3:4b'
     })
 
 
