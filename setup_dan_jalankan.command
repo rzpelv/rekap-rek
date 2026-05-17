@@ -244,7 +244,7 @@ echo ""
 echo "   URL: http://localhost:8181"
 echo ""
 echo "   - Browser akan terbuka otomatis dalam 3 detik"
-echo "   - Tekan Ctrl+C untuk stop server"
+echo "   - Tekan Control+C (bukan Cmd+C) untuk stop server"
 echo ""
 
 # Buka browser setelah 3 detik (background)
