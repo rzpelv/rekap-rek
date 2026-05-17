@@ -19,7 +19,7 @@ Konfigurasi via environment variable:
   GEMINI_MODEL         = nama model (default: gemini-2.0-flash)
 
   ── Ollama ──
-  REKAPIN_AI_MODEL     = nama model (default: qwen3:4b)
+  REKAPIN_AI_MODEL     = nama model (default: qwen3.5:2b)
   REKAPIN_AI_URL       = endpoint Ollama (default: http://localhost:11434)
   REKAPIN_AI_TIMEOUT   = timeout dalam detik (default: 120)
 """
@@ -37,11 +37,13 @@ GEMINI_URL     = "https://generativelanguage.googleapis.com/v1beta/models"
 
 # Ollama config
 OLLAMA_URL      = os.environ.get("REKAPIN_AI_URL", "http://localhost:11434")
-PREFERRED_MODEL = os.environ.get("REKAPIN_AI_MODEL", "qwen3:4b")
+PREFERRED_MODEL = os.environ.get("REKAPIN_AI_MODEL", "qwen3.5:2b")
 TIMEOUT         = int(os.environ.get("REKAPIN_AI_TIMEOUT", "120"))
 
-# Daftar model fallback Ollama urut prioritas (kualitas vs ukuran)
+# Daftar model fallback Ollama urut prioritas (kualitas vs ukuran).
+# Model 2026 (Qwen3.5) didahulukan, lalu Qwen3, Llama 3.3, dst.
 FALLBACK_CHAIN = [
+    "qwen3.5:7b", "qwen3.5:4b", "qwen3.5:2b", "qwen3.5:1.5b",
     "qwen3:8b", "qwen3:4b", "qwen3:1.7b",
     "llama3.3:latest", "llama3.2:3b", "llama3.1:8b",
     "qwen2.5:7b", "qwen2.5:3b",

@@ -113,9 +113,9 @@ Tersedia **2 provider** — pilih sesuai kebutuhan:
 #### Setup
 
 1. Install dari https://ollama.com
-2. Pull model AI:
+2. Pull model AI (rekomendasi: Qwen3.5 2B — terbaru, ringan, multilingual):
    ```bash
-   ollama pull qwen3:4b
+   ollama pull qwen3.5:2b
    ```
 3. Pastikan Ollama running:
    ```bash
@@ -125,12 +125,15 @@ Tersedia **2 provider** — pilih sesuai kebutuhan:
 
 #### Pilihan Model Ollama
 
-| Model              | Ukuran  | Kualitas | Catatan                           |
-|--------------------|---------|----------|-----------------------------------|
-| `qwen3:8b`         | ~5 GB   | ⭐⭐⭐⭐⭐ | Terbaik untuk akurasi             |
-| **`qwen3:4b`** ⭐  | ~2.5 GB | ⭐⭐⭐⭐  | **Default — balance terbaik**     |
-| `qwen3:1.7b`       | ~1 GB   | ⭐⭐⭐    | Sangat ringan                     |
-| `llama3.3:latest`  | ~40 GB  | ⭐⭐⭐⭐⭐ | Butuh GPU besar                   |
+| Model              | Ukuran  | Kualitas | Catatan                                  |
+|--------------------|---------|----------|------------------------------------------|
+| `qwen3.5:7b`       | ~4.5 GB | ⭐⭐⭐⭐⭐ | **Terbaru 2026** — paling akurat        |
+| `qwen3.5:4b`       | ~2.5 GB | ⭐⭐⭐⭐  | **Terbaru 2026** — balance               |
+| **`qwen3.5:2b`** ⭐| ~1.3 GB | ⭐⭐⭐⭐  | **Default — ringan & terbaru**          |
+| `qwen3.5:1.5b`     | ~1 GB   | ⭐⭐⭐    | Sangat ringan, tetap bagus               |
+| `qwen3:8b`         | ~5 GB   | ⭐⭐⭐⭐⭐ | Generasi sebelumnya, masih kuat          |
+| `qwen3:4b`         | ~2.5 GB | ⭐⭐⭐⭐  | Generasi sebelumnya                      |
+| `llama3.3:latest`  | ~40 GB  | ⭐⭐⭐⭐⭐ | Butuh GPU besar                          |
 
 ---
 
@@ -156,7 +159,7 @@ REKAPIN_AI_PROVIDER=ollama python app.py    # paksa Ollama
 | `REKAPIN_AI_PROVIDER`| `auto`                     | `auto` / `gemini` / `ollama`            |
 | `GEMINI_API_KEY`     | _(kosong)_                 | API key dari Google AI Studio           |
 | `GEMINI_MODEL`       | `gemini-2.0-flash`         | Nama model Gemini                       |
-| `REKAPIN_AI_MODEL`   | `qwen3:4b`                 | Nama model Ollama                       |
+| `REKAPIN_AI_MODEL`   | `qwen3.5:2b`               | Nama model Ollama                       |
 | `REKAPIN_AI_URL`     | `http://localhost:11434`   | Endpoint Ollama                         |
 | `REKAPIN_AI_TIMEOUT` | `120`                      | Request timeout (detik)                 |
 
