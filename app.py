@@ -128,16 +128,10 @@ def index():
 
 @app.route('/ai-status')
 def ai_status():
-    """Cek apakah Ollama/AI sedang aktif."""
+    """Cek provider AI yang aktif (Gemini cloud atau Ollama lokal)."""
     if not AI_AVAILABLE:
         return jsonify({'active': False, 'reason': 'ai_helper tidak terinstall'})
-    active = ai.is_available()
-    model = ai.current_model() if active else None
-    return jsonify({
-        'active': active,
-        'model': model,
-        'reason': f'Ollama berjalan — model {model} siap' if active else 'Ollama aktif, tapi model AI belum terinstall. Jalankan: ollama pull qwen3:4b'
-    })
+    return jsonify(ai.status())
 
 
 @app.route('/ai-summary', methods=['POST'])
