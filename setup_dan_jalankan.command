@@ -20,7 +20,7 @@ set -e
 REPO_URL="https://github.com/rzpelv/rekap-rek.git"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$SCRIPT_DIR/rekap-rek"
-AI_MODEL="qwen3:4b"
+AI_MODEL="qwen3.5:2b"
 INSTALL_AI=1
 
 # Color output
@@ -188,8 +188,8 @@ if [ "$INSTALL_AI" = "1" ] && command -v ollama >/dev/null 2>&1; then
     if ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -q "^${AI_MODEL}$"; then
         ok "Model $AI_MODEL sudah ter-pull"
     else
-        info "Pulling model $AI_MODEL (~2.5 GB, sekali saja)..."
-        echo "        Bisa makan waktu 5-15 menit tergantung koneksi."
+        info "Pulling model $AI_MODEL (~1.3 GB, sekali saja)..."
+        echo "        Bisa makan waktu 3-10 menit tergantung koneksi."
         ollama pull "$AI_MODEL" || warn "Gagal pull model. Aplikasi tetap jalan tanpa AI."
         ok "Model $AI_MODEL siap dipakai"
     fi

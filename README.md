@@ -7,7 +7,7 @@ Upload PDF e-statement bank, otomatis diproses jadi file Excel rekap dengan:
 - Ekstraksi nama customer dari deskripsi transaksi
 - Sheet "Edit Penjualan" dengan dropdown untuk koreksi manual
 - Sheet "Customer Summary" dengan formula `SUMIFS` auto-update
-- **Integrasi AI lokal via Ollama (opsional)** untuk kategorisasi & ekstraksi customer yang lebih akurat
+- **Integrasi AI (opsional)** dengan dual provider — Cloud (Gemini) atau Lokal (Ollama)
 
 **Bank yang didukung:** BCA, BRI Giro, BRI Pinjaman, Mandiri, BNI
 
@@ -16,8 +16,7 @@ Upload PDF e-statement bank, otomatis diproses jadi file Excel rekap dengan:
 ## ⚡ Cara Cepat (One-Click Auto Setup)
 
 Tersedia script auto-installer yang akan **otomatis install semua dependency**
-(Python, Git, Ollama, model AI) lalu jalankan aplikasi. Yang sudah terinstall
-akan di-bypass.
+lalu jalankan aplikasi. Yang sudah terinstall akan di-bypass.
 
 ### Windows
 
@@ -38,15 +37,9 @@ akan di-bypass.
 3. Tunggu instalasi otomatis (Homebrew, Python, Git, Ollama)
 4. Browser akan terbuka otomatis ke `http://localhost:8080`
 
-> **Catatan:** Script akan tanya sebelum install Ollama (~2.5 GB untuk model AI).
-> Boleh skip kalau tidak butuh fitur AI — aplikasi tetap jalan dengan
-> kategorisasi keyword.
-
 ---
 
 ## Manual Install
-
-Kalau lebih suka kontrol manual:
 
 ```bash
 git clone https://github.com/rzpelv/rekap-rek.git
@@ -62,71 +55,115 @@ Buka **http://localhost:8080**
 
 ---
 
-## Integrasi AI (opsional, lokal & gratis)
+## 🤖 Integrasi AI (opsional)
 
 Aplikasi punya tombol **"Tingkatkan dengan AI"** di halaman Review yang akan
-re-kategorisasi transaksi pakai LLM lokal via [Ollama](https://ollama.com).
-Tombol hanya muncul kalau Ollama terdeteksi running.
+re-kategorisasi transaksi pakai LLM. Tombol hanya muncul kalau ada provider
+AI yang siap.
 
-### Setup
+Tersedia **2 provider** — pilih sesuai kebutuhan:
 
-1. **Install Ollama**
-   Download dari https://ollama.com → install.
+### 🌥️ Opsi A: Google Gemini (Cloud, GRATIS) ⭐ Direkomendasikan
 
-2. **Pull model AI** (rekomendasi: Qwen3 4B — multilingual, ringan)
+**Plus:**
+- ✅ Tidak perlu install apa-apa
+- ✅ Akurasi tinggi (lebih bagus dari Ollama lokal)
+- ✅ Cepat (1-3 detik per batch)
+- ✅ Free tier 1.500 request/hari
+- ✅ Komputer tidak berat
 
+**Minus:**
+- ❌ Butuh internet
+- ❌ Data dikirim ke server Google
+
+#### Setup
+
+1. **Daftar gratis** di https://aistudio.google.com/apikey
+2. **Buat API Key** (gratis, tidak butuh kartu kredit)
+3. **Set environment variable** sebelum jalankan app:
+
+   **Linux/Mac:**
    ```bash
-   ollama pull qwen3:4b
+   export GEMINI_API_KEY="kunci-kamu"
+   python app.py
    ```
 
-3. **Pastikan Ollama jalan** (biasanya auto-start setelah install)
+   **Windows (PowerShell):**
+   ```powershell
+   $env:GEMINI_API_KEY="kunci-kamu"
+   python app.py
+   ```
 
+4. Selesai — tombol AI akan otomatis muncul.
+
+---
+
+### 💻 Opsi B: Ollama (Lokal, GRATIS, Private)
+
+**Plus:**
+- ✅ 100% lokal, data tidak keluar dari komputer
+- ✅ Bisa offline
+- ✅ Tidak ada rate limit
+
+**Minus:**
+- ❌ Install ~2.5 GB
+- ❌ Komputer lebih berat saat jalan
+- ❌ Lebih lambat dari cloud
+
+#### Setup
+
+1. Install dari https://ollama.com
+2. Pull model AI (rekomendasi: Qwen3.5 2B — terbaru, ringan, multilingual):
+   ```bash
+   ollama pull qwen3.5:2b
+   ```
+3. Pastikan Ollama running:
    ```bash
    ollama serve
    ```
+4. Jalankan aplikasi seperti biasa.
 
-4. **Jalankan aplikasi** seperti biasa — tombol AI muncul otomatis.
+#### Pilihan Model Ollama
 
-### Pilihan Model (urut kualitas → ukuran)
+| Model              | Ukuran  | Kualitas | Catatan                                  |
+|--------------------|---------|----------|------------------------------------------|
+| `qwen3.5:7b`       | ~4.5 GB | ⭐⭐⭐⭐⭐ | **Terbaru 2026** — paling akurat        |
+| `qwen3.5:4b`       | ~2.5 GB | ⭐⭐⭐⭐  | **Terbaru 2026** — balance               |
+| **`qwen3.5:2b`** ⭐| ~1.3 GB | ⭐⭐⭐⭐  | **Default — ringan & terbaru**          |
+| `qwen3.5:1.5b`     | ~1 GB   | ⭐⭐⭐    | Sangat ringan, tetap bagus               |
+| `qwen3:8b`         | ~5 GB   | ⭐⭐⭐⭐⭐ | Generasi sebelumnya, masih kuat          |
+| `qwen3:4b`         | ~2.5 GB | ⭐⭐⭐⭐  | Generasi sebelumnya                      |
+| `llama3.3:latest`  | ~40 GB  | ⭐⭐⭐⭐⭐ | Butuh GPU besar                          |
 
-| Model              | Ukuran | Kualitas | Catatan                           |
-|--------------------|--------|----------|-----------------------------------|
-| `qwen3:8b`         | ~5 GB  | ⭐⭐⭐⭐⭐ | Terbaik untuk akurasi             |
-| **`qwen3:4b`** ⭐  | ~2.5 GB| ⭐⭐⭐⭐  | **Default — balance terbaik**     |
-| `qwen3:1.7b`       | ~1 GB  | ⭐⭐⭐    | Sangat ringan, masih akurat       |
-| `llama3.3:latest`  | ~40 GB | ⭐⭐⭐⭐⭐ | Butuh GPU besar (state-of-the-art)|
-| `llama3.2:3b`      | ~2 GB  | ⭐⭐⭐    | Alternatif Meta                   |
-| `gemma3:4b`        | ~3 GB  | ⭐⭐⭐⭐  | Alternatif Google                 |
+---
 
-Aplikasi punya **auto-fallback chain** — kalau model preferred tidak ada,
-otomatis pilih model lain yang ter-pull.
+### Auto-Detect Provider
 
-### Override Model
+Default `REKAPIN_AI_PROVIDER=auto` artinya:
+1. Kalau `GEMINI_API_KEY` diset → **pakai Gemini**
+2. Kalau Ollama running → **pakai Ollama**
+3. Tidak ada keduanya → tombol AI tidak muncul
 
-Pakai model spesifik:
-
+Paksa pakai provider tertentu:
 ```bash
-REKAPIN_AI_MODEL="llama3.3:latest" python app.py
+REKAPIN_AI_PROVIDER=gemini python app.py    # paksa Gemini
+REKAPIN_AI_PROVIDER=ollama python app.py    # paksa Ollama
 ```
 
-Atau Ollama di host lain:
-
-```bash
-REKAPIN_AI_URL="http://192.168.1.10:11434" python app.py
-```
+---
 
 ### Environment Variables
 
-| Variable             | Default                    | Keterangan                         |
-|----------------------|----------------------------|------------------------------------|
-| `REKAPIN_AI_MODEL`   | `qwen3:4b`                 | Nama model Ollama                  |
-| `REKAPIN_AI_URL`     | `http://localhost:11434`   | Endpoint Ollama                    |
-| `REKAPIN_AI_TIMEOUT` | `120`                      | Request timeout (detik)            |
+| Variable             | Default                    | Keterangan                              |
+|----------------------|----------------------------|-----------------------------------------|
+| `REKAPIN_AI_PROVIDER`| `auto`                     | `auto` / `gemini` / `ollama`            |
+| `GEMINI_API_KEY`     | _(kosong)_                 | API key dari Google AI Studio           |
+| `GEMINI_MODEL`       | `gemini-2.0-flash`         | Nama model Gemini                       |
+| `REKAPIN_AI_MODEL`   | `qwen3.5:2b`               | Nama model Ollama                       |
+| `REKAPIN_AI_URL`     | `http://localhost:11434`   | Endpoint Ollama                         |
+| `REKAPIN_AI_TIMEOUT` | `120`                      | Request timeout (detik)                 |
 
-### Tanpa Ollama
-
-Kalau Ollama tidak running, tombol AI tidak muncul dan aplikasi tetap
-berfungsi normal dengan kategorisasi berbasis keyword.
+> Lihat `.env.example` untuk template lengkap.
 
 ---
 
@@ -135,11 +172,12 @@ berfungsi normal dengan kategorisasi berbasis keyword.
 1. Push repo ke GitHub
 2. Buka [railway.app](https://railway.app) → New Project → Deploy from GitHub
 3. Pilih repo ini → Railway auto-detect Python & deploy
-4. Selesai
+4. (Opsional) Tambah environment variable `GEMINI_API_KEY` di **Settings → Variables**
+   untuk mengaktifkan fitur AI di production
+5. Selesai
 
-> **Catatan:** Railway tidak punya Ollama, jadi fitur AI hanya berfungsi saat
-> dijalankan lokal. Untuk pakai AI di server, gunakan VPS dengan Ollama
-> terinstall dan set `REKAPIN_AI_URL` ke endpoint-nya.
+> **Catatan:** Untuk Railway, pakai **Gemini** (cloud) — bukan Ollama (lokal).
+> Railway tidak punya GPU/RAM cukup untuk LLM lokal.
 
 ---
 
@@ -149,11 +187,12 @@ berfungsi normal dengan kategorisasi berbasis keyword.
 rekap-rek/
 ├── app.py                       # Flask web server (routes, session)
 ├── rekap_rek.py                 # Parser PDF (BCA, BRI, Mandiri, BNI) + Excel builder
-├── ai_helper.py                 # Integrasi Ollama dengan Structured Outputs
+├── ai_helper.py                 # Multi-provider AI (Gemini + Ollama)
 ├── templates/
 │   └── index.html               # Single-page UI
 ├── setup_dan_jalankan.bat       # Auto-installer Windows
 ├── setup_dan_jalankan.command   # Auto-installer macOS/Linux
+├── .env.example                 # Template environment variables
 ├── requirements.txt
 └── railway.json
 ```

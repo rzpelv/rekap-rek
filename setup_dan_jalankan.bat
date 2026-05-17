@@ -27,7 +27,7 @@ echo.
 
 set "REPO_URL=https://github.com/rzpelv/rekap-rek.git"
 set "REPO_DIR=%~dp0rekap-rek"
-set "AI_MODEL=qwen3:4b"
+set "AI_MODEL=qwen3.5:2b"
 set "INSTALL_AI=1"
 
 REM Cek apakah file ini dijalankan dari dalam folder repo
@@ -174,8 +174,8 @@ if "!INSTALL_AI!"=="1" (
         if !errorlevel! equ 0 (
             echo   [OK] Model %AI_MODEL% sudah ter-pull
         ) else (
-            echo   [...] Pulling model %AI_MODEL% ^(~2.5 GB, sekali saja^)...
-            echo         Ini bisa makan waktu 5-15 menit tergantung koneksi.
+            echo   [...] Pulling model %AI_MODEL% ^(~1.3 GB, sekali saja^)...
+            echo         Ini bisa makan waktu 3-10 menit tergantung koneksi.
             ollama pull %AI_MODEL%
             if !errorlevel! neq 0 (
                 echo   [!] Gagal pull model. Aplikasi tetap jalan tanpa AI.
