@@ -268,14 +268,14 @@ echo ═════════════════════════
 echo    Setup selesai! Menjalankan aplikasi...
 echo ═══════════════════════════════════════════════════════════════════
 echo.
-echo   URL: http://localhost:8080
+echo   URL: http://localhost:8181
 echo.
 echo   - Browser akan terbuka otomatis dalam 3 detik
 echo   - Tekan Ctrl+C di window ini untuk stop server
 echo.
 
 REM Buka browser setelah 3 detik (di background)
-start "" /b cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:8080"
+start "" /b cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:8181"
 
 REM Jalankan Flask app (foreground, blocking)
 python app.py

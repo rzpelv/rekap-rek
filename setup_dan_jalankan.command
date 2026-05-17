@@ -241,7 +241,7 @@ echo "════════════════════════�
 echo "   Setup selesai! Menjalankan aplikasi..."
 echo "═══════════════════════════════════════════════════════════════════"
 echo ""
-echo "   URL: http://localhost:8080"
+echo "   URL: http://localhost:8181"
 echo ""
 echo "   - Browser akan terbuka otomatis dalam 3 detik"
 echo "   - Tekan Ctrl+C untuk stop server"
@@ -251,9 +251,9 @@ echo ""
 (
     sleep 3
     if [ "$OS_NAME" = "macOS" ]; then
-        open http://localhost:8080
+        open http://localhost:8181
     elif command -v xdg-open >/dev/null 2>&1; then
-        xdg-open http://localhost:8080
+        xdg-open http://localhost:8181
     fi
 ) &
 

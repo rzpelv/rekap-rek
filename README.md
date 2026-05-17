@@ -23,7 +23,7 @@ lalu jalankan aplikasi. Yang sudah terinstall akan di-bypass.
 1. Download/clone repo ini
 2. **Double-click `setup_dan_jalankan.bat`**
 3. Tunggu instalasi otomatis (Python, Git, Ollama via winget)
-4. Browser akan terbuka otomatis ke `http://localhost:8080`
+4. Browser akan terbuka otomatis ke `http://localhost:8181`
 
 ### macOS / Linux
 
@@ -35,7 +35,7 @@ lalu jalankan aplikasi. Yang sudah terinstall akan di-bypass.
    ```
    _Atau di macOS: klik kanan file `.command` → "Open"_
 3. Tunggu instalasi otomatis (Homebrew, Python, Git, Ollama)
-4. Browser akan terbuka otomatis ke `http://localhost:8080`
+4. Browser akan terbuka otomatis ke `http://localhost:8181`
 
 ---
 
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Buka **http://localhost:8080**
+Buka **http://localhost:8181**
 
 ---
 
