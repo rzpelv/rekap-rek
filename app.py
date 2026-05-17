@@ -3,6 +3,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify, send_file, render_template
 from werkzeug.utils import secure_filename
 import rekap_rek as rr
+import ai_helper
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -149,6 +150,89 @@ def proses():
             }
             for i, t in enumerate(all_transactions)
         ]
+    })
+
+
+@app.route('/ai-status', methods=['GET'])
+def ai_status():
+    """Cek apakah AI integration tersedia (API key sudah diset)."""
+    return jsonify({
+        'available': ai_helper.is_ai_available(),
+    })
+
+
+@app.route('/ai-recategorize', methods=['POST'])
+def ai_recategorize():
+    """
+    Re-kategorisasi semua transaksi di session via AI.
+    Body JSON: { "session_id": "...", "only_uncertain": false }
+
+    Response:
+    {
+      "updated_count": int,
+      "total": int,
+      "transactions": [...],   # full updated list (siap di-render frontend)
+      "errors": [...]
+    }
+    """
+    if not ai_helper.is_ai_available():
+        return jsonify({
+            'error': 'AI belum dikonfigurasi. Set environment variable AI_API_KEY di server.'
+        }), 503
+
+    data = request.get_json(silent=True) or {}
+    session_id = data.get('session_id', '')
+    if not session_id:
+        return jsonify({'error': 'session_id kosong.'}), 400
+
+    session = _load_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session tidak ditemukan. Silakan proses ulang PDF.'}), 400
+
+    meta = session['meta']
+    txs  = [dict(t) for t in session['transactions']]
+
+    log.info(f"AI recategorize: session={session_id} txs={len(txs)}")
+
+    try:
+        result = ai_helper.enrich_transactions(
+            txs,
+            company_name=meta.get('companyName', ''),
+            fallback_keep=True,
+        )
+    except Exception as e:
+        log.exception("AI recategorize gagal")
+        return jsonify({'error': f'AI error: {e}'}), 500
+
+    # Simpan kembali ke session
+    _save_session(session_id, meta, txs)
+
+    # Bentuk response transaksi (sama format dengan /proses)
+    transactions_out = [
+        {
+            'no': i + 1,
+            'month': t['month'],
+            'date': t['date'],
+            'desc': t['desc'],
+            'debet': t['debet'],
+            'kredit': t['kredit'],
+            'balance': t['balance'],
+            'kategori': t['kategori'],
+            'customer': t.get('customer') or (
+                rr._extract_customer_name(t['desc'])
+                if t['kategori'] == 'Penjualan' else ''
+            ),
+            'customerAuto': rr._extract_customer_name(t['desc'])
+                            if t['kategori'] == 'Penjualan' else '',
+        }
+        for i, t in enumerate(txs)
+    ]
+
+    return jsonify({
+        'updated_count': result['updated_count'],
+        'total':         result['total'],
+        'errors':        result['errors'],
+        'transactions':  transactions_out,
     })
 
 
